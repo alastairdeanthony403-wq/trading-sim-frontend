@@ -2,6 +2,91 @@
 // step.type: "teach" (just an explanation, tap to continue) or "question" (multiple choice)
 
 export const LESSONS = {
+  how_markets_work: {
+    title: "How markets work",
+    steps: [
+      {
+        type: "teach",
+        text: "A market is just buyers and sellers agreeing on a price. Every trade needs someone on the other side — to buy, someone must sell to you, and vice versa.",
+      },
+      {
+        type: "teach",
+        text: "At any moment a price quote has two sides: the bid (highest price buyers will pay) and the ask (lowest price sellers will accept). The gap between them is the spread.",
+      },
+      {
+        type: "question",
+        prompt: "You want to buy right now. Which price do you typically pay?",
+        options: ["The bid", "The ask", "The midpoint always", "Yesterday's close"],
+        correctIndex: 1,
+        explanation: "Buyers pay the ask (the lowest price a seller is currently offering). Sellers receive the bid. The difference is the spread — a real cost on every trade.",
+      },
+      {
+        type: "teach",
+        text: "The spread is a hidden cost. A wide spread means you start each trade at a bigger loss and need a larger move just to break even. Liquid markets have tight spreads; thin ones don't.",
+      },
+      {
+        type: "question",
+        prompt: "Why does a wider spread make trading harder?",
+        options: [
+          "It doesn't affect anything",
+          "You start each trade further underwater and need a bigger move to break even",
+          "It guarantees a loss every time",
+          "It only matters for long-term investors",
+        ],
+        correctIndex: 1,
+        explanation: "You buy at the ask and sell at the bid, so the spread is an immediate cost. Wider spread = bigger hole to climb out of before you're in profit.",
+      },
+    ],
+  },
+
+  order_types: {
+    title: "Order types & execution",
+    steps: [
+      {
+        type: "teach",
+        text: "An order is your instruction to the market. The three you'll use most: market orders, limit orders, and stop orders. Choosing the right one is a real skill most beginners overlook.",
+      },
+      {
+        type: "teach",
+        text: "A market order fills immediately at the best available price. Fast and near-guaranteed to fill — but you don't control the exact price, and in fast markets you can get 'slippage'.",
+      },
+      {
+        type: "question",
+        prompt: "You need to exit a losing trade RIGHT NOW, price is secondary. Which order?",
+        options: ["Limit order", "Market order", "No order", "Wait and see"],
+        correctIndex: 1,
+        explanation: "A market order prioritizes speed of execution over price — the right tool when getting out immediately matters more than the exact fill.",
+      },
+      {
+        type: "teach",
+        text: "A limit order fills only at your specified price or better. You control the price, but there's no guarantee it fills — price might never reach your level, and you miss the move.",
+      },
+      {
+        type: "question",
+        prompt: "You want to buy only if price drops to a specific support level, not a penny higher. Which order?",
+        options: ["Market order", "Limit order", "Neither works", "Whichever is faster"],
+        correctIndex: 1,
+        explanation: "A buy limit set at your support level only fills at that price or better. You trade price control for the risk that it never fills.",
+      },
+      {
+        type: "teach",
+        text: "A stop order stays dormant until price hits your trigger, then becomes a market order. Its most important use: the stop-loss, which exits you automatically if price moves against you. Once triggered it fills at the next available price, so in gaps it can slip.",
+      },
+      {
+        type: "question",
+        prompt: "What's the most important everyday use of a stop order?",
+        options: [
+          "Guaranteeing you never lose",
+          "A stop-loss that exits you automatically if price moves against you",
+          "Making trades fill faster",
+          "Avoiding the spread",
+        ],
+        correctIndex: 1,
+        explanation: "The stop-loss is the essential risk-management order — it caps your loss by exiting automatically, even when you're not watching. It guarantees you're out, not the exact price.",
+      },
+    ],
+  },
+
   risk_basics: {
     title: "Risk basics",
     steps: [
@@ -35,6 +120,52 @@ export const LESSONS = {
         ],
         correctIndex: 1,
         explanation: "The stop goes where the idea is proven wrong. Sizing is worked out afterward, around that stop.",
+      },
+    ],
+  },
+
+  core_indicators: {
+    title: "Core indicators",
+    steps: [
+      {
+        type: "teach",
+        text: "Indicators are calculations plotted on your chart to summarize price behavior. They don't predict the future — they organize what price has already done. Treat them as context, not signals to blindly obey.",
+      },
+      {
+        type: "teach",
+        text: "A moving average smooths price into a single line, helping you see trend direction. Price above a rising moving average suggests an uptrend; below a falling one suggests a downtrend.",
+      },
+      {
+        type: "question",
+        prompt: "What does a moving average primarily help you see?",
+        options: [
+          "Exact future price",
+          "The smoothed trend direction of price",
+          "Guaranteed entry points",
+          "The spread",
+        ],
+        correctIndex: 1,
+        explanation: "A moving average smooths noise to reveal underlying trend direction — it's a context tool, not a crystal ball.",
+      },
+      {
+        type: "teach",
+        text: "RSI (Relative Strength Index) measures momentum on a 0–100 scale. Readings above 70 are often called 'overbought' and below 30 'oversold' — but in strong trends these can persist for a long time.",
+      },
+      {
+        type: "question",
+        prompt: "RSI has been above 70 for a while in a strong uptrend. What's the sensible read?",
+        options: [
+          "Short immediately — it must reverse",
+          "Overbought can persist in strong trends; it's not an automatic sell",
+          "The indicator is broken",
+          "Buy more with no other consideration",
+        ],
+        correctIndex: 1,
+        explanation: "'Overbought' doesn't mean 'about to fall.' In strong trends RSI can stay elevated — using it as a standalone reversal signal is a classic trap.",
+      },
+      {
+        type: "teach",
+        text: "The key discipline with all indicators: they lag price and work best confirming what structure and price action already suggest — not as standalone reasons to trade.",
       },
     ],
   },
@@ -146,6 +277,80 @@ export const LESSONS = {
         ],
         correctIndex: 1,
         explanation: "A long lower wick with a strong close shows price was pushed down, then bought back up — buyers defended that level.",
+      },
+    ],
+  },
+
+  support_resistance: {
+    title: "Support and resistance",
+    steps: [
+      {
+        type: "teach",
+        text: "Support is a price level where falling prices have tended to stop and bounce — buyers step in. Resistance is the opposite: a level where rising prices have tended to stall as sellers step in.",
+      },
+      {
+        type: "teach",
+        text: "These levels form because market participants remember them. A price that reversed before is watched by everyone, so orders cluster there, making the level self-reinforcing.",
+      },
+      {
+        type: "question",
+        prompt: "Price has bounced up off the $50 level three separate times. What is $50 acting as?",
+        options: ["Resistance", "Support", "A random number", "A moving average"],
+        correctIndex: 1,
+        explanation: "A level that repeatedly halts falling prices and produces bounces is support — buyers reliably show up there.",
+      },
+      {
+        type: "teach",
+        text: "A key idea: once broken, support often becomes resistance and vice versa. If price finally breaks below support, that old floor frequently becomes a ceiling on any bounce back up.",
+      },
+      {
+        type: "question",
+        prompt: "Price breaks down through a long-standing support level, then rallies back up to it. What's likely at that old level?",
+        options: [
+          "It will act as support again automatically",
+          "It often flips to become resistance",
+          "It becomes meaningless",
+          "Price always blasts straight through",
+        ],
+        correctIndex: 1,
+        explanation: "Broken support commonly flips to resistance (and broken resistance to support). This 'role reversal' is one of the most useful S/R concepts.",
+      },
+    ],
+  },
+
+  trends_conditions: {
+    title: "Trends & market conditions",
+    steps: [
+      {
+        type: "teach",
+        text: "Markets are in one of a few conditions at any time: trending (moving directionally), ranging (bouncing between levels), or reversing. Your strategy should match the condition in front of you.",
+      },
+      {
+        type: "teach",
+        text: "Trend-following setups work well in trending markets but get chopped up in ranges. Range setups (buy support, sell resistance) work in ranges but get run over when a strong trend begins.",
+      },
+      {
+        type: "question",
+        prompt: "You keep getting stopped out taking breakout trades — price keeps reversing back into a band. What condition are you likely in?",
+        options: ["A strong trend", "A range", "A reversal", "Impossible to tell"],
+        correctIndex: 1,
+        explanation: "Repeated failed breakouts that snap back into a band is the signature of a ranging market — breakout/trend strategies struggle here.",
+      },
+      {
+        type: "teach",
+        text: "The mistake usually isn't the strategy itself — it's using one that doesn't fit current conditions. Reading the condition first tells you which tools even apply.",
+      },
+      {
+        type: "question",
+        prompt: "What's the first thing to assess before picking a setup?",
+        options: [
+          "How much you want to make",
+          "Whether the market is trending, ranging, or reversing",
+          "What other traders are posting online",
+          "The exact time of day only",
+        ],
+        correctIndex: 1,
+        explanation: "Identify the condition first — it determines whether trend, range, or reversal tactics are appropriate at all.",
       },
     ],
   },
@@ -266,6 +471,48 @@ export const LESSONS = {
     ],
   },
 
+  fundamentals_news: {
+    title: "Fundamentals & news",
+    steps: [
+      {
+        type: "teach",
+        text: "Technical analysis studies price; fundamentals study what drives it — economic data, earnings, interest rates, and news. Even pure chart traders need to know when major events are due.",
+      },
+      {
+        type: "teach",
+        text: "Scheduled events (central bank decisions, jobs reports, earnings) cause sharp, fast moves and wide spreads. Price can gap right through your stop, so many traders reduce size or stand aside around them.",
+      },
+      {
+        type: "question",
+        prompt: "A major central bank rate decision is due in five minutes. What's a common risk-aware approach?",
+        options: [
+          "Load up on maximum size to catch the move",
+          "Reduce size or stand aside — volatility and gaps make stops unreliable",
+          "It makes no difference to how you trade",
+          "Remove your stop-loss entirely",
+        ],
+        correctIndex: 1,
+        explanation: "Scheduled high-impact events cause violent, gappy moves where stops can slip badly. Reducing exposure or waiting is a common, sensible response.",
+      },
+      {
+        type: "teach",
+        text: "You don't have to trade the news to respect it. Knowing the economic calendar tells you when the character of the market is about to change, even if your edge is purely technical.",
+      },
+      {
+        type: "question",
+        prompt: "Why should a purely technical trader still check the economic calendar?",
+        options: [
+          "To predict exact prices",
+          "To know when volatility and gap risk will spike, changing market character",
+          "It's not necessary at all",
+          "To copy other traders' positions",
+        ],
+        correctIndex: 1,
+        explanation: "The calendar flags when conditions will shift. Even without trading the event, knowing it's coming protects you from getting blindsided.",
+      },
+    ],
+  },
+
   trade_journaling: {
     title: "Journaling your trades",
     steps: [
@@ -304,6 +551,48 @@ export const LESSONS = {
         ],
         correctIndex: 1,
         explanation: "Good process and good outcomes aren't the same thing. Logging the violation honestly protects your discipline long-term.",
+      },
+    ],
+  },
+
+  trading_plan: {
+    title: "Building a trading plan",
+    steps: [
+      {
+        type: "teach",
+        text: "A trading plan turns scattered knowledge into repeatable rules. Without one, every trade is an improvised decision — which makes it impossible to know if you have an edge or just got lucky.",
+      },
+      {
+        type: "teach",
+        text: "A basic plan answers: what setups do I take, what conditions must be present, how do I size, where's my stop, where's my target, and what's my max risk per trade and per day?",
+      },
+      {
+        type: "question",
+        prompt: "What's the main reason a written plan matters?",
+        options: [
+          "It looks professional",
+          "It makes your process repeatable, so you can tell skill from luck",
+          "It guarantees profits",
+          "It replaces the need to manage risk",
+        ],
+        correctIndex: 1,
+        explanation: "Repeatable rules let you evaluate whether your approach actually works. Improvised trades can't be measured or improved systematically.",
+      },
+      {
+        type: "teach",
+        text: "A plan is only useful if you follow it and then review it. Your journal feeds back into the plan: keep the rules that work, cut the ones that don't, and only change rules based on evidence, not emotion.",
+      },
+      {
+        type: "question",
+        prompt: "After a losing streak, how should you change your trading plan?",
+        options: [
+          "Scrap it entirely and start fresh each time",
+          "Only adjust based on reviewed evidence from your journal, not emotion",
+          "Immediately double your risk to recover",
+          "Never change anything ever",
+        ],
+        correctIndex: 1,
+        explanation: "Plans evolve through evidence-based review, not knee-jerk reactions. A losing streak alone isn't proof a rule is broken — the data tells you.",
       },
     ],
   },

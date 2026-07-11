@@ -417,3 +417,99 @@ body {
 .lesson-row:hover {
   color: #ffffff;
 }
+
+/* --- Interactive lesson player --- */
+
+.lesson-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #1c2128;
+  border-radius: 3px;
+  margin-left: 24px;
+  overflow: hidden;
+}
+
+.lesson-progress-fill {
+  height: 100%;
+  background: #3fb68b;
+  transition: width 0.2s ease;
+}
+
+.lesson-player {
+  flex: 1;
+  padding: 40px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.lesson-player h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.lesson-question {
+  font-size: 16px;
+  color: #e8ecef;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.lesson-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.lesson-option {
+  background: #12161b;
+  border: 1px solid #232830;
+  color: #d6dbe0;
+  padding: 14px 18px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-option:hover {
+  border-color: #3fb68b;
+}
+
+.lesson-option.correct {
+  border-color: #3fb68b;
+  background: #12211c;
+  color: #3fb68b;
+}
+
+.lesson-option.incorrect {
+  border-color: #d9534f;
+  background: #211414;
+  color: #d9534f;
+}
+
+.lesson-feedback {
+  border-top: 1px solid #1c2128;
+  padding-top: 16px;
+}
+
+.feedback-correct {
+  color: #3fb68b;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.feedback-incorrect {
+  color: #d9534f;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.lesson-explanation {
+  color: #8a94a1;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}

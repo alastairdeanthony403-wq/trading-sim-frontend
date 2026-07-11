@@ -25,6 +25,9 @@ export default function App() {
   const [scenarios, setScenarios] = useState([]);
   const [progressData, setProgressData] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [lessonStepIndex, setLessonStepIndex] = useState(0);
+  const [lessonAnswer, setLessonAnswer] = useState(null);
+  const [lessonCorrectCount, setLessonCorrectCount] = useState(0);
   const [session, setSession] = useState(null);
   const [allBars, setAllBars] = useState([]);
   const [visibleCount, setVisibleCount] = useState(1);
@@ -301,6 +304,9 @@ export default function App() {
                   onClick={() => {
                     if (!unlocked) return;
                     setSelectedLesson(l.id);
+                    setLessonStepIndex(0);
+                    setLessonAnswer(null);
+                    setLessonCorrectCount(0);
                     setScreen("lesson_detail");
                   }}
                   style={unlocked ? { cursor: "pointer" } : {}}
@@ -321,17 +327,100 @@ export default function App() {
 
   if (screen === "lesson_detail" && selectedLesson && LESSONS[selectedLesson]) {
     const lesson = LESSONS[selectedLesson];
+    const step = lesson.steps[lessonStepIndex];
+    const isLastStep = lessonStepIndex === lesson.steps.length - 1;
+
+    const handleContinue = () => {
+      if (isLastStep) {
+        setScreen("lesson_complete");
+      } else {
+        setLessonStepIndex((i) => i + 1);
+        setLessonAnswer(null);
+      }
+    };
+
+    const handleAnswer = (idx) => {
+      if (lessonAnswer != null) return; // already answered
+      setLessonAnswer(idx);
+      if (idx === step.correctIndex) {
+        setLessonCorrectCount((c) => c + 1);
+      }
+    };
+
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <div className="lesson-progress-bar">
+            <div
+              className="lesson-progress-fill"
+              style={{ width: `${((lessonStepIndex + 1) / lesson.steps.length) * 100}%` }}
+            />
+          </div>
+        </header>
+        <main className="lesson-player">
+          <h2>{lesson.title}</h2>
+
+          {step.type === "teach" && (
+            <>
+              <p className="lesson-body">{step.text}</p>
+              <button className="primary-btn" onClick={handleContinue}>
+                Continue
+              </button>
+            </>
+          )}
+
+          {step.type === "question" && (
+            <>
+              <p className="lesson-question">{step.prompt}</p>
+              <div className="lesson-options">
+                {step.options.map((opt, idx) => {
+                  let cls = "lesson-option";
+                  if (lessonAnswer != null) {
+                    if (idx === step.correctIndex) cls += " correct";
+                    else if (idx === lessonAnswer) cls += " incorrect";
+                  }
+                  return (
+                    <button key={idx} className={cls} onClick={() => handleAnswer(idx)}>
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+              {lessonAnswer != null && (
+                <div className="lesson-feedback">
+                  <p className={lessonAnswer === step.correctIndex ? "feedback-correct" : "feedback-incorrect"}>
+                    {lessonAnswer === step.correctIndex ? "Correct." : "Not quite."}
+                  </p>
+                  <p className="lesson-explanation">{step.explanation}</p>
+                  <button className="primary-btn" onClick={handleContinue}>
+                    {isLastStep ? "Finish" : "Continue"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "lesson_complete" && selectedLesson) {
+    const lesson = LESSONS[selectedLesson];
+    const totalQuestions = lesson.steps.filter((s) => s.type === "question").length;
     return (
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
         </header>
-        <main className="howto">
-          <button className="link-btn" onClick={() => setScreen("lessons")} style={{ marginBottom: 16 }}>
-            ← Lessons
+        <main className="lesson-player">
+          <h2>Lesson complete</h2>
+          <p className="lesson-body">
+            {lessonCorrectCount} / {totalQuestions} correct on "{lesson.title}"
+          </p>
+          <button className="menu-btn" onClick={() => setScreen("lessons")}>
+            Back to lessons
           </button>
-          <h2>{lesson.title}</h2>
-          <p className="lesson-body">{lesson.body}</p>
         </main>
       </div>
     );

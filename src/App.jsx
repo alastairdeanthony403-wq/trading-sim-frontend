@@ -80,6 +80,13 @@ export default function App() {
     };
   }, [screen]);
 
+  const hasFitRef = useRef(false);
+
+  // reset fit tracking when entering a new session
+  useEffect(() => {
+    hasFitRef.current = false;
+  }, [session]);
+
   // push visible bars to chart whenever visibleCount changes
   useEffect(() => {
     if (!seriesRef.current || allBars.length === 0) return;
@@ -91,7 +98,10 @@ export default function App() {
       close: b.close,
     }));
     seriesRef.current.setData(slice);
-    chartRef.current?.timeScale().fitContent();
+    if (!hasFitRef.current) {
+      chartRef.current?.timeScale().fitContent();
+      hasFitRef.current = true;
+    }
   }, [visibleCount, allBars]);
 
   // playback loop

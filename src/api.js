@@ -62,3 +62,12 @@ export async function getProgress(userId) {
   const res = await fetch(`${API_BASE}/progress/${userId}`);
   return res.json();
 }
+
+export async function markComplete(userId, itemId) {
+  const res = await fetch(`${API_BASE}/progress/${userId}/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_id: itemId }),
+  });
+  return res.json();
+}

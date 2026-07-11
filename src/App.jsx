@@ -11,7 +11,7 @@ import {
   getProgress,
 } from "./api";
 import { getUserId } from "./user";
-import { LESSONS } from "./lessons";
+import Learn from "./Learn";
 import "./App.css";
 
 const SPEEDS = [
@@ -21,13 +21,9 @@ const SPEEDS = [
 ];
 
 export default function App() {
-  const [screen, setScreen] = useState("menu"); // menu | select | playing | results | progress
+  const [screen, setScreen] = useState("menu"); // menu | select | playing | results | progress | learn
   const [scenarios, setScenarios] = useState([]);
   const [progressData, setProgressData] = useState(null);
-  const [selectedLesson, setSelectedLesson] = useState(null);
-  const [lessonStepIndex, setLessonStepIndex] = useState(0);
-  const [lessonAnswer, setLessonAnswer] = useState(null);
-  const [lessonCorrectCount, setLessonCorrectCount] = useState(0);
   const [session, setSession] = useState(null);
   const [allBars, setAllBars] = useState([]);
   const [visibleCount, setVisibleCount] = useState(1);
@@ -201,15 +197,15 @@ export default function App() {
             <button className="menu-btn menu-btn-primary" onClick={() => setScreen("select")}>
               Play a scenario
             </button>
-            <button className="menu-btn" onClick={openProgress}>
-              Your progress
-            </button>
             <button className="menu-btn" onClick={async () => {
               const p = await getProgress(getUserId());
               setProgressData(p);
-              setScreen("lessons");
+              setScreen("learn");
             }}>
-              Lessons
+              Learn to trade
+            </button>
+            <button className="menu-btn" onClick={openProgress}>
+              Your progress
             </button>
             <button className="menu-btn" onClick={() => setScreen("howto")}>
               How it works
@@ -217,6 +213,22 @@ export default function App() {
           </div>
         </main>
       </div>
+    );
+  }
+
+  if (screen === "learn") {
+    return (
+      <Learn
+        progressData={progressData}
+        onExit={() => setScreen("menu")}
+        onProgressUpdate={(res) => {
+          setProgressData((prev) => ({
+            ...prev,
+            completed_lessons: res.completed_lessons,
+            next_item: res.next_item,
+          }));
+        }}
+      />
     );
   }
 
@@ -244,186 +256,47 @@ export default function App() {
   }
 
   if (screen === "progress" && progressData) {
+    const completed = new Set(progressData.completed_lessons || []);
+    const path = progressData.ordered_path || [];
+    const lessonsDone = path.filter((i) => i.type === "lesson" && completed.has(i.id)).length;
+    const lessonsTotal = path.filter((i) => i.type === "lesson").length;
+    const checksDone = path.filter((i) => i.type === "check" && completed.has(i.id)).length;
+    const checksTotal = path.filter((i) => i.type === "check").length;
     return (
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
         </header>
         <main className="howto">
           <h2>Your progress</h2>
           <div className="results-grid" style={{ marginBottom: 24 }}>
+            <Stat label="Lessons completed" value={`${lessonsDone} / ${lessonsTotal}`} />
+            <Stat label="Checks passed" value={`${checksDone} / ${checksTotal}`} />
             <Stat label="Scenarios completed" value={progressData.total_scenarios_completed} />
             <Stat
               label="Best composite score"
-              value={progressData.best_composite_score != null ? progressData.best_composite_score.toFixed(1) : "—"}
+              value={progressData.best_composite_score != null ? progressData.best_composite_score.toFixed(1) : "\u2014"}
             />
           </div>
-
-          <h3 className="section-label">Lessons</h3>
-          <ul className="unlock-list">
-            {progressData.all_lessons.map((l) => (
-              <li key={l.id} className={progressData.unlocked_lessons.includes(l.id) ? "unlocked" : "locked"}>
-                {l.id.replace(/_/g, " ")} {progressData.unlocked_lessons.includes(l.id) ? "— unlocked" : `— needs score ${l.threshold}`}
-              </li>
-            ))}
-          </ul>
 
           <h3 className="section-label">Scenario tiers</h3>
           <ul className="unlock-list">
             {progressData.all_tiers.map((t) => (
               <li key={t.tier} className={progressData.unlocked_scenario_tiers.includes(t.tier) ? "unlocked" : "locked"}>
-                Tier {t.tier} {progressData.unlocked_scenario_tiers.includes(t.tier) ? "— unlocked" : `— needs score ${t.threshold}`}
+                Tier {t.tier} {progressData.unlocked_scenario_tiers.includes(t.tier) ? "\u2014 unlocked" : `\u2014 needs score ${t.threshold}`}
               </li>
             ))}
           </ul>
 
-          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginTop: 20 }}>
-            Back to menu
+          <button className="primary-btn" onClick={() => setScreen("learn")} style={{ marginTop: 20 }}>
+            Go to lessons
           </button>
         </main>
       </div>
     );
   }
 
-  if (screen === "lessons" && progressData) {
-    return (
-      <div className="app">
-        <header className="header">
-          <div className="logo">TAPE//RUN</div>
-        </header>
-        <main className="howto">
-          <h2>Lessons</h2>
-          <ul className="unlock-list">
-            {progressData.all_lessons.map((l) => {
-              const unlocked = progressData.unlocked_lessons.includes(l.id);
-              const content = LESSONS[l.id];
-              return (
-                <li
-                  key={l.id}
-                  className={unlocked ? "unlocked lesson-row" : "locked"}
-                  onClick={() => {
-                    setSelectedLesson(l.id);
-                    setLessonStepIndex(0);
-                    setLessonAnswer(null);
-                    setLessonCorrectCount(0);
-                    setScreen("lesson_detail");
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  {content ? content.title : l.id.replace(/_/g, " ")}
-                  {!unlocked && ` — needs score ${l.threshold}`}
-                </li>
-              );
-            })}
-          </ul>
-          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginTop: 20 }}>
-            Back to menu
-          </button>
-        </main>
-      </div>
-    );
-  }
-
-  if (screen === "lesson_detail" && selectedLesson && LESSONS[selectedLesson]) {
-    const lesson = LESSONS[selectedLesson];
-    const step = lesson.steps[lessonStepIndex];
-    const isLastStep = lessonStepIndex === lesson.steps.length - 1;
-
-    const handleContinue = () => {
-      if (isLastStep) {
-        setScreen("lesson_complete");
-      } else {
-        setLessonStepIndex((i) => i + 1);
-        setLessonAnswer(null);
-      }
-    };
-
-    const handleAnswer = (idx) => {
-      if (lessonAnswer != null) return; // already answered
-      setLessonAnswer(idx);
-      if (idx === step.correctIndex) {
-        setLessonCorrectCount((c) => c + 1);
-      }
-    };
-
-    return (
-      <div className="app">
-        <header className="header">
-          <div className="logo">TAPE//RUN</div>
-          <div className="lesson-progress-bar">
-            <div
-              className="lesson-progress-fill"
-              style={{ width: `${((lessonStepIndex + 1) / lesson.steps.length) * 100}%` }}
-            />
-          </div>
-        </header>
-        <main className="lesson-player">
-          <h2>{lesson.title}</h2>
-
-          {step.type === "teach" && (
-            <>
-              <p className="lesson-body">{step.text}</p>
-              <button className="primary-btn" onClick={handleContinue}>
-                Continue
-              </button>
-            </>
-          )}
-
-          {step.type === "question" && (
-            <>
-              <p className="lesson-question">{step.prompt}</p>
-              <div className="lesson-options">
-                {step.options.map((opt, idx) => {
-                  let cls = "lesson-option";
-                  if (lessonAnswer != null) {
-                    if (idx === step.correctIndex) cls += " correct";
-                    else if (idx === lessonAnswer) cls += " incorrect";
-                  }
-                  return (
-                    <button key={idx} className={cls} onClick={() => handleAnswer(idx)}>
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
-              {lessonAnswer != null && (
-                <div className="lesson-feedback">
-                  <p className={lessonAnswer === step.correctIndex ? "feedback-correct" : "feedback-incorrect"}>
-                    {lessonAnswer === step.correctIndex ? "Correct." : "Not quite."}
-                  </p>
-                  <p className="lesson-explanation">{step.explanation}</p>
-                  <button className="primary-btn" onClick={handleContinue}>
-                    {isLastStep ? "Finish" : "Continue"}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </main>
-      </div>
-    );
-  }
-
-  if (screen === "lesson_complete" && selectedLesson) {
-    const lesson = LESSONS[selectedLesson];
-    const totalQuestions = lesson.steps.filter((s) => s.type === "question").length;
-    return (
-      <div className="app">
-        <header className="header">
-          <div className="logo">TAPE//RUN</div>
-        </header>
-        <main className="lesson-player">
-          <h2>Lesson complete</h2>
-          <p className="lesson-body">
-            {lessonCorrectCount} / {totalQuestions} correct on "{lesson.title}"
-          </p>
-          <button className="menu-btn" onClick={() => setScreen("lessons")}>
-            Back to lessons
-          </button>
-        </main>
-      </div>
-    );
-  }
 
   if (screen === "select") {
     return (

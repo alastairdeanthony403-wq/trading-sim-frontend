@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #0b0e11;
+}
+
+body {
+  font-family: 'JetBrains Mono', monospace;
+  color: #d6dbe0;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #1c2128;
+  background: #0e1216;
+}
+
+.logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: #e8ecef;
+}
+
+.tagline {
+  font-size: 13px;
+  color: #6b7684;
+}
+
+.balance {
+  font-size: 14px;
+  color: #8a94a1;
+  letter-spacing: 0.5px;
+}
+
+.balance span {
+  color: #e8ecef;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.pnl-pos { color: #3fb68b; font-weight: 700; }
+.pnl-neg { color: #d9534f; font-weight: 700; }
+
+/* --- Scenario select --- */
+
+.scenario-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 32px;
+  align-content: start;
+}
+
+.scenario-card {
+  background: #12161b;
+  border: 1px solid #232830;
+  border-radius: 2px;
+  padding: 20px;
+  text-align: left;
+  cursor: pointer;
+  color: #d6dbe0;
+  transition: border-color 0.15s ease;
+}
+
+.scenario-card:hover {
+  border-color: #3fb68b;
+}
+
+.scenario-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scenario-tier {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #d9a94e;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.scenario-meta {
+  font-size: 14px;
+  color: #b5bcc4;
+  margin-bottom: 4px;
+}
+
+.scenario-bars {
+  font-size: 12px;
+  color: #6b7684;
+}
+
+.muted {
+  color: #6b7684;
+  padding: 24px;
+}
+
+/* --- Playing screen --- */
+
+.chart-container {
+  width: 100%;
+  height: 420px;
+  border-bottom: 1px solid #1c2128;
+}
+
+.controls {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #0e1216;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.speed-group {
+  display: flex;
+  gap: 4px;
+}
+
+.speed-btn {
+  background: #161a1f;
+  border: 1px solid #232830;
+  color: #b5bcc4;
+  padding: 8px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.speed-btn.active {
+  border-color: #3fb68b;
+  color: #3fb68b;
+}
+
+.progress {
+  margin-left: auto;
+  font-size: 13px;
+  color: #6b7684;
+}
+
+.size-input {
+  width: 90px;
+  background: #161a1f;
+  border: 1px solid #232830;
+  color: #e8ecef;
+  padding: 10px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.long-btn, .short-btn, .close-btn, .end-btn {
+  border: none;
+  border-radius: 2px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.long-btn {
+  background: #3fb68b;
+  color: #06110d;
+}
+
+.short-btn {
+  background: #d9534f;
+  color: #1a0908;
+}
+
+.close-btn {
+  background: #d9a94e;
+  color: #1a1408;
+}
+
+.end-btn {
+  background: transparent;
+  border: 1px solid #333a44;
+  color: #8a94a1;
+  margin-left: auto;
+}
+
+/* --- Results screen --- */
+
+.results {
+  flex: 1;
+  padding: 40px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.results h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin: 24px 0 32px;
+}
+
+.stat {
+  background: #12161b;
+  border: 1px solid #232830;
+  border-radius: 2px;
+  padding: 16px;
+}
+
+.stat-highlight {
+  border-color: #d9a94e;
+  grid-column: span 2;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b7684;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e8ecef;
+}
+
+.primary-btn {
+  background: #3fb68b;
+  color: #06110d;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}

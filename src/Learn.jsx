@@ -251,6 +251,12 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
             {correctCount} / {check.questions.length} correct.
             {passed ? " You've cleared this unit." : ` You need ${check.passMark} to pass — give it another go.`}
           </p>
+          {passed && check.practice && (
+            <div className="practice-directive">
+              <div className="practice-label">PRACTICE IN THE SIMULATOR</div>
+              <p>{check.practice}</p>
+            </div>
+          )}
           {passed ? (
             <button className="primary-btn" onClick={onComplete}>Continue</button>
           ) : (

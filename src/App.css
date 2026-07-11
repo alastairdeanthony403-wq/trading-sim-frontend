@@ -294,3 +294,114 @@ body {
   color: #3fb68b;
   font-weight: 700;
 }
+
+/* --- Main menu --- */
+
+.menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px;
+  max-width: 560px;
+}
+
+.menu-intro {
+  color: #8a94a1;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.menu-btn {
+  background: #12161b;
+  border: 1px solid #232830;
+  color: #d6dbe0;
+  padding: 14px 20px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-btn:hover {
+  border-color: #3fb68b;
+}
+
+.menu-btn-primary {
+  background: #3fb68b;
+  color: #06110d;
+  font-weight: 700;
+  border: none;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #6b7684;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: #d6dbe0;
+}
+
+/* --- How it works / Progress --- */
+
+.howto {
+  flex: 1;
+  padding: 40px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.howto h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.howto-list {
+  color: #b5bcc4;
+  line-height: 1.8;
+  font-size: 14px;
+  padding-left: 20px;
+}
+
+.section-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  color: #8a94a1;
+  margin: 20px 0 8px;
+}
+
+.unlock-list {
+  list-style: none;
+  padding: 0;
+  font-size: 14px;
+}
+
+.unlock-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #1c2128;
+  text-transform: capitalize;
+}
+
+.unlock-list li.unlocked {
+  color: #3fb68b;
+}
+
+.unlock-list li.locked {
+  color: #565f6b;
+}

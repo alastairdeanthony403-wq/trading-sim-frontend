@@ -8,6 +8,7 @@ import {
   closeTrade,
   endSession,
   getLeaderboard,
+  getProgress,
 } from "./api";
 import { getUserId } from "./user";
 import "./App.css";
@@ -19,8 +20,9 @@ const SPEEDS = [
 ];
 
 export default function App() {
-  const [screen, setScreen] = useState("select"); // select | playing | results
+  const [screen, setScreen] = useState("menu"); // menu | select | playing | results | progress
   const [scenarios, setScenarios] = useState([]);
+  const [progressData, setProgressData] = useState(null);
   const [session, setSession] = useState(null);
   const [allBars, setAllBars] = useState([]);
   const [visibleCount, setVisibleCount] = useState(1);
@@ -39,6 +41,12 @@ export default function App() {
 
   useEffect(() => {
     listScenarios().then(setScenarios);
+  }, []);
+
+  const openProgress = useCallback(async () => {
+    const p = await getProgress(getUserId());
+    setProgressData(p);
+    setScreen("progress");
   }, []);
 
   // set up chart once when entering playing screen
@@ -172,12 +180,105 @@ export default function App() {
 
   // ---------- SCREENS ----------
 
-  if (screen === "select") {
+  if (screen === "menu") {
     return (
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
           <div className="tagline">Trade blind. Score on discipline, not luck.</div>
+        </header>
+        <main className="menu">
+          <p className="menu-intro">
+            Historical price action, dates and tickers hidden. Trade what you see,
+            not what you remember happened.
+          </p>
+          <div className="menu-buttons">
+            <button className="menu-btn menu-btn-primary" onClick={() => setScreen("select")}>
+              Play a scenario
+            </button>
+            <button className="menu-btn" onClick={openProgress}>
+              Your progress
+            </button>
+            <button className="menu-btn" onClick={() => setScreen("howto")}>
+              How it works
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "howto") {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+        </header>
+        <main className="howto">
+          <h2>How it works</h2>
+          <ol className="howto-list">
+            <li>Pick a scenario. It's real historical price data — no dates or tickers shown.</li>
+            <li>Watch bars play out one at a time. Go long or short whenever you see a setup.</li>
+            <li>Set your position size, then close the trade whenever you want to lock in P&L.</li>
+            <li>End the session to get scored — not on raw profit, but on risk-adjusted performance (Sharpe, drawdown, win rate).</li>
+            <li>Better scores unlock harder scenarios and new lesson content.</li>
+          </ol>
+          <button className="menu-btn" onClick={() => setScreen("menu")}>
+            Back to menu
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "progress" && progressData) {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+        </header>
+        <main className="howto">
+          <h2>Your progress</h2>
+          <div className="results-grid" style={{ marginBottom: 24 }}>
+            <Stat label="Scenarios completed" value={progressData.total_scenarios_completed} />
+            <Stat
+              label="Best composite score"
+              value={progressData.best_composite_score != null ? progressData.best_composite_score.toFixed(1) : "—"}
+            />
+          </div>
+
+          <h3 className="section-label">Lessons</h3>
+          <ul className="unlock-list">
+            {progressData.all_lessons.map((l) => (
+              <li key={l.id} className={progressData.unlocked_lessons.includes(l.id) ? "unlocked" : "locked"}>
+                {l.id.replace(/_/g, " ")} {progressData.unlocked_lessons.includes(l.id) ? "— unlocked" : `— needs score ${l.threshold}`}
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="section-label">Scenario tiers</h3>
+          <ul className="unlock-list">
+            {progressData.all_tiers.map((t) => (
+              <li key={t.tier} className={progressData.unlocked_scenario_tiers.includes(t.tier) ? "unlocked" : "locked"}>
+                Tier {t.tier} {progressData.unlocked_scenario_tiers.includes(t.tier) ? "— unlocked" : `— needs score ${t.threshold}`}
+              </li>
+            ))}
+          </ul>
+
+          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginTop: 20 }}>
+            Back to menu
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "select") {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
         </header>
         <main className="scenario-grid">
           {scenarios.length === 0 && <p className="muted">Loading scenarios…</p>}
@@ -234,6 +335,9 @@ export default function App() {
 
           <button className="primary-btn" onClick={() => setScreen("select")}>
             Run another scenario
+          </button>
+          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
+            Back to menu
           </button>
         </main>
       </div>

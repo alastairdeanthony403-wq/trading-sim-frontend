@@ -405,3 +405,15 @@ body {
 .unlock-list li.locked {
   color: #565f6b;
 }
+
+.lesson-body {
+  color: #b5bcc4;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-line;
+  max-width: 560px;
+}
+
+.lesson-row:hover {
+  color: #ffffff;
+}

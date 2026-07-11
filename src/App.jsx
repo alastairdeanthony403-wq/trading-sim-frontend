@@ -11,6 +11,7 @@ import {
   getProgress,
 } from "./api";
 import { getUserId } from "./user";
+import { LESSONS } from "./lessons";
 import "./App.css";
 
 const SPEEDS = [
@@ -23,6 +24,7 @@ export default function App() {
   const [screen, setScreen] = useState("menu"); // menu | select | playing | results | progress
   const [scenarios, setScenarios] = useState([]);
   const [progressData, setProgressData] = useState(null);
+  const [selectedLesson, setSelectedLesson] = useState(null);
   const [session, setSession] = useState(null);
   const [allBars, setAllBars] = useState([]);
   const [visibleCount, setVisibleCount] = useState(1);
@@ -199,6 +201,13 @@ export default function App() {
             <button className="menu-btn" onClick={openProgress}>
               Your progress
             </button>
+            <button className="menu-btn" onClick={async () => {
+              const p = await getProgress(getUserId());
+              setProgressData(p);
+              setScreen("lessons");
+            }}>
+              Lessons
+            </button>
             <button className="menu-btn" onClick={() => setScreen("howto")}>
               How it works
             </button>
@@ -268,6 +277,61 @@ export default function App() {
           <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginTop: 20 }}>
             Back to menu
           </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "lessons" && progressData) {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+        </header>
+        <main className="howto">
+          <h2>Lessons</h2>
+          <ul className="unlock-list">
+            {progressData.all_lessons.map((l) => {
+              const unlocked = progressData.unlocked_lessons.includes(l.id);
+              const content = LESSONS[l.id];
+              return (
+                <li
+                  key={l.id}
+                  className={unlocked ? "unlocked lesson-row" : "locked"}
+                  onClick={() => {
+                    if (!unlocked) return;
+                    setSelectedLesson(l.id);
+                    setScreen("lesson_detail");
+                  }}
+                  style={unlocked ? { cursor: "pointer" } : {}}
+                >
+                  {content ? content.title : l.id.replace(/_/g, " ")}
+                  {!unlocked && ` — needs score ${l.threshold}`}
+                </li>
+              );
+            })}
+          </ul>
+          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginTop: 20 }}>
+            Back to menu
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "lesson_detail" && selectedLesson && LESSONS[selectedLesson]) {
+    const lesson = LESSONS[selectedLesson];
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+        </header>
+        <main className="howto">
+          <button className="link-btn" onClick={() => setScreen("lessons")} style={{ marginBottom: 16 }}>
+            ← Lessons
+          </button>
+          <h2>{lesson.title}</h2>
+          <p className="lesson-body">{lesson.body}</p>
         </main>
       </div>
     );

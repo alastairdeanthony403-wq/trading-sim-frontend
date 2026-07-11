@@ -302,14 +302,13 @@ export default function App() {
                   key={l.id}
                   className={unlocked ? "unlocked lesson-row" : "locked"}
                   onClick={() => {
-                    if (!unlocked) return;
                     setSelectedLesson(l.id);
                     setLessonStepIndex(0);
                     setLessonAnswer(null);
                     setLessonCorrectCount(0);
                     setScreen("lesson_detail");
                   }}
-                  style={unlocked ? { cursor: "pointer" } : {}}
+                  style={{ cursor: "pointer" }}
                 >
                   {content ? content.title : l.id.replace(/_/g, " ")}
                   {!unlocked && ` — needs score ${l.threshold}`}

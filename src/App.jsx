@@ -7,7 +7,9 @@ import {
   openTrade,
   closeTrade,
   endSession,
+  getLeaderboard,
 } from "./api";
+import { getUserId } from "./user";
 import "./App.css";
 
 const SPEEDS = [
@@ -28,6 +30,7 @@ export default function App() {
   const [tradeSize, setTradeSize] = useState(10);
   const [balance, setBalance] = useState(10000);
   const [results, setResults] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const chartRef = useRef(null);
@@ -119,7 +122,7 @@ export default function App() {
 
   const handleSelectScenario = useCallback(async (scenarioId) => {
     setLoading(true);
-    const s = await startSession(scenarioId);
+    const s = await startSession(scenarioId, getUserId());
     const bars = await getBars(s.session_id);
     setSession(s);
     setAllBars(bars);
@@ -154,6 +157,8 @@ export default function App() {
     if (openTradeState) await handleCloseTrade();
     const res = await endSession(session.session_id);
     setResults(res);
+    const board = await getLeaderboard(session.scenario_id);
+    setLeaderboard(board);
     setScreen("results");
   };
 
@@ -209,6 +214,24 @@ export default function App() {
             <Stat label="Win rate" value={`${results.win_rate.toFixed(1)}%`} />
             <Stat label="Composite score" value={results.score_composite.toFixed(1)} highlight />
           </div>
+
+          {leaderboard.length > 0 && (
+            <div className="leaderboard">
+              <h3>Leaderboard — this scenario</h3>
+              <table>
+                <tbody>
+                  {leaderboard.map((e) => (
+                    <tr key={e.rank} className={e.user_id === getUserId() ? "lb-me" : ""}>
+                      <td>#{e.rank}</td>
+                      <td>{e.user_id === getUserId() ? "You" : e.user_id}</td>
+                      <td>{e.composite_score.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <button className="primary-btn" onClick={() => setScreen("select")}>
             Run another scenario
           </button>

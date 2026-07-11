@@ -123,7 +123,7 @@ export default function App() {
     const bars = await getBars(s.session_id);
     setSession(s);
     setAllBars(bars);
-    setVisibleCount(Math.min(10, bars.length));
+    setVisibleCount(Math.min(30, bars.length));
     setBalance(s.starting_balance);
     setOpenTradeState(null);
     setResults(null);

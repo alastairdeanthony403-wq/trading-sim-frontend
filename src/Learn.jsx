@@ -3,16 +3,19 @@ import { LESSONS } from "./lessons";
 import { CHECKS } from "./checks";
 import { getUserId } from "./user";
 import { markComplete } from "./api";
+import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
 
-// Titles for path items so the map reads nicely
+const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠" };
+
 function itemTitle(item) {
   if (item.type === "lesson") return LESSONS[item.id]?.title || item.id;
   return CHECKS[item.id]?.title || item.id;
 }
 
 export default function Learn({ progressData, onExit, onProgressUpdate }) {
-  const [view, setView] = useState("path"); // path | player
+  const [view, setView] = useState("path");
   const [activeItem, setActiveItem] = useState(null);
+  const [, forceRefresh] = useState(0);
 
   if (!progressData) {
     return (
@@ -27,6 +30,11 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
   const path = progressData.ordered_path || [];
   const nextItem = progressData.next_item;
 
+  const xp = getXp();
+  const rank = levelFor(xp);
+  const next = nextLevelFor(xp);
+  const prog = levelProgress(xp);
+
   const startItem = (item) => {
     setActiveItem(item);
     setView("player");
@@ -34,9 +42,10 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
 
   const handleItemComplete = async () => {
     const res = await markComplete(getUserId(), activeItem.id);
-    onProgressUpdate(res); // refresh completed_lessons + next_item in parent
+    onProgressUpdate(res);
     setView("path");
     setActiveItem(null);
+    forceRefresh((n) => n + 1); // re-read XP after a session
   };
 
   if (view === "player" && activeItem) {
@@ -58,11 +67,9 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
     );
   }
 
-  // ---- PATH VIEW ----
   const totalItems = path.length;
   const doneCount = path.filter((i) => completed.has(i.id)).length;
 
-  // group path by unit for display
   const units = {};
   for (const item of path) {
     if (!units[item.unit]) units[item.unit] = [];
@@ -80,30 +87,42 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
         <button className="link-btn" onClick={onExit}>← Menu</button>
       </header>
       <main className="learn">
+        <div className="rank-card">
+          <div className="rank-left">
+            <div className="rank-badge">LVL {rank.level}</div>
+            <div>
+              <div className="rank-name">{rank.name}</div>
+              <div className="rank-xp">{xp} XP{next ? ` · ${next.xp - xp} to ${next.name}` : " · MAX RANK"}</div>
+            </div>
+          </div>
+          <div className="xp-bar">
+            <div className="xp-fill" style={{ width: `${Math.min(prog * 100, 100)}%` }} />
+          </div>
+        </div>
+
         <div className="learn-header">
           <h2>Learn to trade</h2>
-          <div className="learn-progress-summary">
-            {doneCount} / {totalItems} complete
-          </div>
+          <div className="learn-progress-summary">{doneCount} / {totalItems} COMPLETE</div>
         </div>
 
         {nextItem && (
           <button className="continue-btn" onClick={() => startItem(nextItem)}>
-            {doneCount === 0 ? "Start learning" : "Continue"} → {itemTitle(nextItem)}
+            {doneCount === 0 ? "▶ START LEARNING" : "▶ CONTINUE"} — {itemTitle(nextItem)}
           </button>
         )}
         {!nextItem && (
-          <div className="learn-done-banner">You've completed the whole path. Nice work.</div>
+          <div className="learn-done-banner">🏆 Full curriculum complete. Replay anything to sharpen up — XP still counts.</div>
         )}
 
         {Object.keys(units).map((unitNum) => {
           const items = units[unitNum];
           const unitDone = items.filter((i) => completed.has(i.id)).length;
+          const unitComplete = unitDone === items.length;
           return (
-            <div key={unitNum} className="learn-unit">
+            <div key={unitNum} className={unitComplete ? "learn-unit unit-complete" : "learn-unit"}>
               <div className="learn-unit-title">
-                <span>Unit {unitNum} — {unitMeta[unitNum]}</span>
-                <span className="unit-count">{unitDone}/{items.length}</span>
+                <span><span className="unit-icon">{UNIT_ICONS[unitNum] || "•"}</span> Unit {unitNum} — {unitMeta[unitNum]}</span>
+                <span className="unit-count">{unitComplete ? "★ COMPLETE" : `${unitDone}/${items.length}`}</span>
               </div>
               <div className="learn-items">
                 {items.map((item) => {
@@ -122,7 +141,7 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
                       disabled={isLocked}
                     >
                       <span className="learn-item-icon">
-                        {isDone ? "✓" : item.type === "check" ? "★" : "•"}
+                        {isDone ? "✓" : item.type === "check" ? "★" : "▸"}
                       </span>
                       <span className="learn-item-label">
                         {itemTitle(item)}
@@ -141,18 +160,42 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
   );
 }
 
-// ---------- Lesson player (teach + question steps) ----------
+// ---------- Streak display ----------
+
+function StreakBadge({ streak }) {
+  if (streak < 3) return null;
+  return <div className="streak-badge">🔥 STREAK ×{streak}</div>;
+}
+
+// ---------- Lesson player ----------
 
 function LessonPlayer({ lesson, onComplete, onQuit }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [summary, setSummary] = useState(null);
+  const [xpFlash, setXpFlash] = useState(null);
 
   const step = lesson.steps[stepIndex];
   const isLastStep = stepIndex === lesson.steps.length - 1;
+  const totalQuestions = lesson.steps.filter((s) => s.type === "question").length;
+
+  const finish = () => {
+    let earned = sessionXp;
+    let perfect = false;
+    if (totalQuestions > 0 && correctCount === totalQuestions) {
+      earned += XP_RULES.perfectLesson;
+      perfect = true;
+    }
+    const res = addXp(earned);
+    setSummary({ earned, perfect, leveledUp: res.leveledUp, newRank: levelFor(res.after) });
+  };
 
   const next = () => {
     if (isLastStep) {
-      onComplete();
+      finish();
     } else {
       setStepIndex((i) => i + 1);
       setAnswer(null);
@@ -162,7 +205,38 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
   const answerQ = (idx) => {
     if (answer != null) return;
     setAnswer(idx);
+    if (idx === step.correctIndex) {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      setCorrectCount((c) => c + 1);
+      const gained = XP_RULES.lessonCorrect + (newStreak >= 3 ? XP_RULES.streakBonus : 0);
+      setSessionXp((x) => x + gained);
+      setXpFlash(`+${gained} XP`);
+      setTimeout(() => setXpFlash(null), 900);
+    } else {
+      setStreak(0);
+    }
   };
+
+  if (summary) {
+    return (
+      <div className="app">
+        <header className="header"><div className="logo">TAPE//RUN</div></header>
+        <main className="lesson-player summary-screen">
+          <div className="summary-emoji">{summary.perfect ? "💎" : "✅"}</div>
+          <h2>{summary.perfect ? "Perfect lesson!" : "Lesson complete"}</h2>
+          <p className="lesson-body">
+            {correctCount} / {totalQuestions} correct{summary.perfect ? " — flawless run, bonus earned." : "."}
+          </p>
+          <div className="xp-award">+{summary.earned} XP</div>
+          {summary.leveledUp && (
+            <div className="levelup-banner">⬆ RANK UP — you are now <strong>{summary.newRank.name}</strong></div>
+          )}
+          <button className="primary-btn" onClick={onComplete}>Continue</button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -171,9 +245,14 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
         <div className="lesson-progress-bar">
           <div className="lesson-progress-fill" style={{ width: `${((stepIndex + 1) / lesson.steps.length) * 100}%` }} />
         </div>
+        <div className="player-stats">
+          <span className="player-correct">✓ {correctCount}</span>
+          <StreakBadge streak={streak} />
+        </div>
         <button className="link-btn" onClick={onQuit}>✕</button>
       </header>
       <main className="lesson-player">
+        {xpFlash && <div className="xp-flash">{xpFlash}</div>}
         <h2>{lesson.title}</h2>
 
         {step.type === "teach" && (
@@ -216,13 +295,17 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
   );
 }
 
-// ---------- Knowledge check (all questions, needs pass mark) ----------
+// ---------- Knowledge check ----------
 
 function KnowledgeCheck({ check, onComplete, onQuit }) {
   const [qIndex, setQIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [awarded, setAwarded] = useState(null);
+  const [xpFlash, setXpFlash] = useState(null);
 
   const q = check.questions[qIndex];
   const isLast = qIndex === check.questions.length - 1;
@@ -230,11 +313,25 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
   const answerQ = (idx) => {
     if (answer != null) return;
     setAnswer(idx);
-    if (idx === q.correctIndex) setCorrectCount((c) => c + 1);
+    if (idx === q.correctIndex) {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      setCorrectCount((c) => c + 1);
+      const gained = XP_RULES.checkCorrect + (newStreak >= 3 ? XP_RULES.streakBonus : 0);
+      setSessionXp((x) => x + gained);
+      setXpFlash(`+${gained} XP`);
+      setTimeout(() => setXpFlash(null), 900);
+    } else {
+      setStreak(0);
+    }
   };
 
   const next = () => {
     if (isLast) {
+      const passed = correctCount >= check.passMark;
+      let earned = sessionXp + (passed ? XP_RULES.checkPassed : 0);
+      const res = addXp(earned);
+      setAwarded({ earned, passed, leveledUp: res.leveledUp, newRank: levelFor(res.after) });
       setFinished(true);
     } else {
       setQIndex((i) => i + 1);
@@ -242,28 +339,33 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
     }
   };
 
-  if (finished) {
-    const passed = correctCount >= check.passMark;
+  if (finished && awarded) {
     return (
       <div className="app">
         <header className="header"><div className="logo">TAPE//RUN</div></header>
-        <main className="lesson-player">
-          <h2>{passed ? "Check passed" : "Almost there"}</h2>
+        <main className="lesson-player summary-screen">
+          <div className="summary-emoji">{awarded.passed ? "🏆" : "🔁"}</div>
+          <h2>{awarded.passed ? "Check passed" : "Almost there"}</h2>
           <p className="lesson-body">
             {correctCount} / {check.questions.length} correct.
-            {passed ? " You've cleared this unit." : ` You need ${check.passMark} to pass — give it another go.`}
+            {awarded.passed ? " Unit cleared — bonus banked." : ` You need ${check.passMark} to pass — the XP you earned still counts. Run it back.`}
           </p>
-          {passed && check.practice && (
+          <div className="xp-award">+{awarded.earned} XP</div>
+          {awarded.leveledUp && (
+            <div className="levelup-banner">⬆ RANK UP — you are now <strong>{awarded.newRank.name}</strong></div>
+          )}
+          {awarded.passed && check.practice && (
             <div className="practice-directive">
               <div className="practice-label">PRACTICE IN THE SIMULATOR</div>
               <p>{check.practice}</p>
             </div>
           )}
-          {passed ? (
+          {awarded.passed ? (
             <button className="primary-btn" onClick={onComplete}>Continue</button>
           ) : (
             <button className="primary-btn" onClick={() => {
-              setQIndex(0); setAnswer(null); setCorrectCount(0); setFinished(false);
+              setQIndex(0); setAnswer(null); setCorrectCount(0); setStreak(0);
+              setSessionXp(0); setFinished(false); setAwarded(null);
             }}>
               Retry check
             </button>
@@ -280,9 +382,14 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
         <div className="lesson-progress-bar">
           <div className="lesson-progress-fill" style={{ width: `${((qIndex + 1) / check.questions.length) * 100}%` }} />
         </div>
+        <div className="player-stats">
+          <span className="player-correct">✓ {correctCount}</span>
+          <StreakBadge streak={streak} />
+        </div>
         <button className="link-btn" onClick={onQuit}>✕</button>
       </header>
       <main className="lesson-player">
+        {xpFlash && <div className="xp-flash">{xpFlash}</div>}
         <div className="check-badge">KNOWLEDGE CHECK</div>
         <h2>{check.title}</h2>
         <p className="lesson-question">{q.prompt}</p>

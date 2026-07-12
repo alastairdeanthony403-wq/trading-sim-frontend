@@ -1070,3 +1070,71 @@ body {
   height: auto;
   display: block;
 }
+
+/* ============ GLOSSARY TOOLTIPS ============ */
+
+.gloss {
+  position: relative;
+  border-bottom: 1px dashed var(--cyan);
+  cursor: help;
+  outline: none;
+}
+
+.gloss:hover, .gloss:focus {
+  color: var(--cyan);
+}
+
+.gloss::after {
+  content: attr(data-def);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 280px;
+  background: var(--panel-raised);
+  border: 1px solid var(--cyan);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: normal;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(69,216,255,0.12);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.gloss::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--cyan);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  z-index: 100;
+}
+
+.gloss:hover::after, .gloss:focus::after,
+.gloss:hover::before, .gloss:focus::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.gloss:hover::before, .gloss:focus::before {
+  transform: translateX(-50%);
+}
+
+@media (max-width: 640px) {
+  .gloss::after { width: 210px; }
+}

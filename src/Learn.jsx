@@ -4,6 +4,7 @@ import { CHECKS } from "./checks";
 import { getUserId } from "./user";
 import { markComplete } from "./api";
 import Diagram from "./Diagrams";
+import { Gloss } from "./glossary";
 import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠" };
@@ -258,7 +259,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
 
         {step.type === "teach" && (
           <>
-            <p className="lesson-body">{step.text}</p>
+            <p className="lesson-body"><Gloss>{step.text}</Gloss></p>
             {step.image && <Diagram id={step.image} />}
             <button className="primary-btn" onClick={next}>Continue</button>
           </>
@@ -266,7 +267,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
 
         {step.type === "question" && (
           <>
-            <p className="lesson-question">{step.prompt}</p>
+            <p className="lesson-question"><Gloss>{step.prompt}</Gloss></p>
             {step.image && <Diagram id={step.image} />}
             <div className="lesson-options">
               {step.options.map((opt, idx) => {
@@ -285,7 +286,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
                 <p className={answer === step.correctIndex ? "feedback-correct" : "feedback-incorrect"}>
                   {answer === step.correctIndex ? "Correct." : "Not quite."}
                 </p>
-                <p className="lesson-explanation">{step.explanation}</p>
+                <p className="lesson-explanation"><Gloss>{step.explanation}</Gloss></p>
                 <button className="primary-btn" onClick={next}>
                   {isLastStep ? "Finish lesson" : "Continue"}
                 </button>
@@ -395,7 +396,7 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
         {xpFlash && <div className="xp-flash">{xpFlash}</div>}
         <div className="check-badge">KNOWLEDGE CHECK</div>
         <h2>{check.title}</h2>
-        <p className="lesson-question">{q.prompt}</p>
+        <p className="lesson-question"><Gloss>{q.prompt}</Gloss></p>
         {q.image && <Diagram id={q.image} />}
         <div className="lesson-options">
           {q.options.map((opt, idx) => {
@@ -412,7 +413,7 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
             <p className={answer === q.correctIndex ? "feedback-correct" : "feedback-incorrect"}>
               {answer === q.correctIndex ? "Correct." : "Not quite."}
             </p>
-            <p className="lesson-explanation">{q.explanation}</p>
+            <p className="lesson-explanation"><Gloss>{q.explanation}</Gloss></p>
             <button className="primary-btn" onClick={next}>
               {isLast ? "See result" : "Next question"}
             </button>

@@ -184,15 +184,15 @@ export default function App() {
   if (screen === "menu") {
     return (
       <div className="app">
-        <header className="header">
-          <div className="logo">TAPE//RUN</div>
-          <div className="tagline">Trade blind. Score on discipline, not luck.</div>
-        </header>
         <main className="menu">
-          <p className="menu-intro">
-            Historical price action, dates and tickers hidden. Trade what you see,
-            not what you remember happened.
-          </p>
+          <h1 className="menu-hero">TAPE<span className="accent">//</span>RUN</h1>
+          <div className="tagline">Trade blind. Score on discipline, not luck.</div>
+          <div className="menu-boot">
+            <div className="boot-line">market data <span className="ok">LOADED</span> — real history, tickers &amp; dates hidden</div>
+            <div className="boot-line">execution engine <span className="ok">ARMED</span> — live spread, slippage &amp; commission</div>
+            <div className="boot-line">scoring <span className="ok">ONLINE</span> — risk-adjusted, not raw P&amp;L</div>
+            <div className="boot-line">awaiting operator input<span className="cursor" /></div>
+          </div>
           <div className="menu-buttons">
             <button className="menu-btn menu-btn-primary" onClick={() => setScreen("select")}>
               Play a scenario

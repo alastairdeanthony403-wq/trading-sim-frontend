@@ -98,10 +98,12 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
 
         {Object.keys(units).map((unitNum) => {
           const items = units[unitNum];
+          const unitDone = items.filter((i) => completed.has(i.id)).length;
           return (
             <div key={unitNum} className="learn-unit">
               <div className="learn-unit-title">
-                Unit {unitNum} — {unitMeta[unitNum]}
+                <span>Unit {unitNum} — {unitMeta[unitNum]}</span>
+                <span className="unit-count">{unitDone}/{items.length}</span>
               </div>
               <div className="learn-items">
                 {items.map((item) => {

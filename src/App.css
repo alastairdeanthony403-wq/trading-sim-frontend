@@ -1052,3 +1052,21 @@ body {
 }
 
 .learn-unit.unit-complete .learn-unit-title { color: var(--green); }
+
+/* ============ DIAGRAMS ============ */
+
+.diagram-frame {
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--line-bright);
+  border-radius: 4px;
+  padding: 14px 10px 6px;
+  margin: 0 0 24px;
+  max-width: 580px;
+  box-shadow: 0 0 26px rgba(69,216,255,0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.diagram-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}

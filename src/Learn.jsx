@@ -3,6 +3,7 @@ import { LESSONS } from "./lessons";
 import { CHECKS } from "./checks";
 import { getUserId } from "./user";
 import { markComplete } from "./api";
+import Diagram from "./Diagrams";
 import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠" };
@@ -258,6 +259,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
         {step.type === "teach" && (
           <>
             <p className="lesson-body">{step.text}</p>
+            {step.image && <Diagram id={step.image} />}
             <button className="primary-btn" onClick={next}>Continue</button>
           </>
         )}

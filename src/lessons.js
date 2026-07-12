@@ -24,6 +24,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Every quote has two prices. The BID is the highest price buyers currently offer. The ASK is the lowest price sellers currently accept. The gap between them is the SPREAD.",
+        image: "bid-ask",
       },
       {
         type: "question",
@@ -142,6 +143,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "LIMIT ORDER: fills only at your price or better. A buy limit goes BELOW current price, a sell limit ABOVE. Use for planned entries at levels and for taking profit. Risk: price never reaches you and the trade happens without you.",
+        image: "order-map",
       },
       {
         type: "question",
@@ -255,6 +257,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "THE FORMULA: Position size = Risk amount ÷ Stop distance. Entry $50, stop $48 → stop distance $2. Risking $100 → $100 ÷ $2 = 50 shares. If the stop hits: 50 × $2 = exactly $100 lost. The math is the whole lesson.",
+        image: "stop-bracket",
       },
       {
         type: "question",
@@ -354,6 +357,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "MOVING AVERAGE LAG: because MAs average the past, they turn AFTER price does. The longer the period, the smoother but later the signal. Every MA signal is late by design — the price you pay for smoothness.",
+        image: "ma-pullback",
       },
       {
         type: "question",
@@ -370,6 +374,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "RSI measures the speed of recent gains vs losses on a 0–100 scale. Above 70 = 'overbought', below 30 = 'oversold'. The quotes matter: in strong trends, RSI can pin above 70 or below 30 for a long time while price keeps going.",
+        image: "rsi-divergence",
       },
       {
         type: "question",
@@ -432,6 +437,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "R = the amount you risked. Every outcome can be expressed in R: risk $100, make $250 → +2.5R; lose the full stop → -1R. Thinking in R normalizes every trade so wins/losses become comparable and your system becomes measurable.",
+        image: "stop-bracket",
       },
       {
         type: "question",
@@ -609,6 +615,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Each candle compresses one time period into four prices: Open, High, Low, Close (OHLC). The body spans open-to-close. The wicks mark the extremes. One candle = one complete auction story.",
+        image: "candle-anatomy",
       },
       {
         type: "question",
@@ -715,6 +722,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Support: a price area where declines have repeatedly stopped — buyers defend it. Resistance: where rallies repeatedly stall — sellers defend it. They're zones, not exact lines: think a price band a few ticks wide.",
+        image: "sr-zone",
       },
       {
         type: "question",
@@ -747,6 +755,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "ROLE REVERSAL: broken support tends to become resistance, and broken resistance becomes support. Trapped traders exiting at breakeven plus breakout traders re-entering on the retest both create orders at the old level.",
+        image: "role-reversal",
       },
       {
         type: "question",
@@ -809,6 +818,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Every market is doing one of three things: TRENDING (directional, making progress), RANGING (oscillating between boundaries), or TRANSITIONING (a trend losing steam or a range breaking). The first read on any chart is: which one is this?",
+        image: "range-vs-trend",
       },
       {
         type: "question",
@@ -911,6 +921,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Market structure is the skeleton of a trend: the sequence of swing highs and swing lows. Uptrend = higher highs (HH) + higher lows (HL). Downtrend = lower highs (LH) + lower lows (LL). Everything else in technical trading hangs off this skeleton.",
+        image: "trend-structure",
       },
       {
         type: "question",
@@ -943,6 +954,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "CHANGE OF CHARACTER (CHoCH): the first break AGAINST the prevailing structure — e.g. in an uptrend, price breaks below the most recent higher low. It's the earliest warning the trend may be over. Warning, not proof.",
+        image: "choch",
       },
       {
         type: "question",
@@ -1017,6 +1029,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "A DEMAND zone is where a sharp rally launched — evidence big buying interest lived there. A SUPPLY zone is where a sharp decline launched. The sharper and further the move away, the more significant the zone: strong departures imply orders that couldn't fully fill.",
+        image: "supply-demand",
       },
       {
         type: "question",
@@ -1135,6 +1148,7 @@ export const LESSONS = {
       {
         type: "teach",
         text: "Why sweeps happen: a fund wanting to BUY big needs sellers. Pushing price below a swing low triggers the stop cluster — a burst of forced selling — into which the fund fills its buys. Price then often reverses hard, leaving a long wick. That's a liquidity sweep / stop hunt.",
+        image: "liquidity-sweep",
       },
       {
         type: "question",

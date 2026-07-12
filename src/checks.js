@@ -10,36 +10,42 @@ export const CHECKS = {
     questions: [
       {
         prompt: "Bid $24.90 / ask $25.10. You buy 200 shares at market then immediately sell at market. Total cost of the round trip?",
+        image: "downtrend-structure",
         options: ["$4", "$40", "$400", "Nothing"],
         correctIndex: 1,
         explanation: "You pay the ask, receive the bid: $0.20 × 200 = $40 lost to the spread with zero price movement.",
       },
       {
         prompt: "Which order type guarantees your PRICE but not your FILL?",
+        image: "downtrend-structure",
         options: ["Market", "Limit", "Stop", "None of them"],
         correctIndex: 1,
         explanation: "A limit order only executes at your price or better — but if the market never comes to you, it never fills.",
       },
       {
         prompt: "Price is $80. You want in only if strength is confirmed by a break above $82. Which order?",
+        image: "bid-ask",
         options: ["Buy limit $82", "Buy stop $82", "Sell stop $82", "Market order now"],
         correctIndex: 1,
         explanation: "A buy stop above resistance triggers only when price trades there — entry on confirmation.",
       },
       {
         prompt: "You're long from $30, sell stop at $28. Earnings gap the open to $25. Your likely fill?",
+        image: "gap-risk",
         options: ["$28 exactly", "About $25", "$30", "The order cancels"],
         correctIndex: 1,
         explanation: "Stops don't protect through gaps — they trigger and fill at the next traded price.",
       },
       {
         prompt: "Multi-step: account $5,000. You trade a thin stock with a $0.30 average spread cost, 100 shares per trade, 10 round trips a week. Roughly what % of the account goes to spread alone in a year (50 weeks)?",
+        image: "trend-structure",
         options: ["3%", "10%", "30%", "300%"],
         correctIndex: 2,
         explanation: "$0.30 × 100 × 10 × 50 = $1,500 = 30% of the account. Execution cost compounds with frequency — most 'strategy' failures are really cost failures.",
       },
       {
         prompt: "TRAP: A trader brags they 'never use stop-losses, that's how the market takes your money'. The real risk of this approach?",
+        image: "stop-bracket",
         options: [
           "There is none — stops are optional",
           "Losses have no defined cap; one bad trade can do damage that no win rate recovers from",
@@ -51,6 +57,7 @@ export const CHECKS = {
       },
       {
         prompt: "You plan: long at $45 support, wrong below $43.50, target $49. Express the whole plan in orders.",
+        image: "sr-zone",
         options: [
           "Buy limit $45, sell stop $43.50, sell limit $49",
           "Buy stop $45, sell limit $43.50, sell stop $49",
@@ -62,6 +69,7 @@ export const CHECKS = {
       },
       {
         prompt: "Why does the same strategy often perform worse on an illiquid instrument than a liquid one?",
+        image: "downtrend-structure",
         options: [
           "Illiquid instruments trend less",
           "Wider spreads and more slippage raise the cost of every entry and exit, eating the edge",
@@ -81,6 +89,7 @@ export const CHECKS = {
     questions: [
       {
         prompt: "Daily candle: open $72, high $79, low $71.50, close $73. What's the honest one-line read?",
+        image: "candle-anatomy",
         options: [
           "Strong bullish conviction",
           "Rally to $79 was heavily rejected — sellers drove it back near the open; caution on longs",
@@ -92,6 +101,7 @@ export const CHECKS = {
       },
       {
         prompt: "Price bounces at $61.80, $62.05, $61.90 across three declines. A trader sets a limit buy at exactly $62.05 with a stop at $61.95. What's wrong?",
+        image: "sr-zone",
         options: [
           "Nothing — precise is professional",
           "Both orders sit INSIDE the support zone's noise — normal zone chop will stop them out even when the level holds",
@@ -103,6 +113,7 @@ export const CHECKS = {
       },
       {
         prompt: "Higher-timeframe context: weekly chart in a downtrend below broken support; 15-min chart prints a bullish hammer. Trade grade for a swing long?",
+        image: "downtrend-structure",
         options: [
           "A+ — hammers are hammers",
           "Low quality — a lower-timeframe blip against dominant higher-timeframe supply",
@@ -114,6 +125,7 @@ export const CHECKS = {
       },
       {
         prompt: "A breakout candle clears resistance on volume 4× average. Versus the same breakout on 0.3× volume, the high-volume version is…",
+        image: "volume-conviction",
         options: [
           "Identical in meaning",
           "More trustworthy — broad participation makes reversal harder and follow-through likelier",
@@ -125,6 +137,7 @@ export const CHECKS = {
       },
       {
         prompt: "Six weeks of price action between $95 and $105, currently $96. Which trade fits the condition?",
+        image: "range-vs-trend",
         options: [
           "Short $96 targeting $85 — momentum!",
           "Long near the $95 edge, stop below the zone, target the $105 edge",
@@ -136,6 +149,7 @@ export const CHECKS = {
       },
       {
         prompt: "An uptrend's last three pullbacks: -3%, -5%, -9%, and the latest rally barely made a new high before stalling. What's the read?",
+        image: "downtrend-structure",
         options: [
           "The trend is accelerating bullishly",
           "Character change — deepening pullbacks and fading thrust are transition evidence; tighten risk on longs",
@@ -147,6 +161,7 @@ export const CHECKS = {
       },
       {
         prompt: "TRAP: 'The $150 level has held eight times this month, so my stop can sit right at $149.90 — it's basically a wall.' The flaw?",
+        image: "downtrend-structure",
         options: [
           "None — walls are walls",
           "Rapid repeated tests EXHAUST levels, and $149.90 sits exactly in the stop-cluster below an obvious line — fragile level, worst placement",
@@ -158,6 +173,7 @@ export const CHECKS = {
       },
       {
         prompt: "Multi-step: strong uptrend, price pulls back 4% to a zone that's produced two prior bounces, prints a long lower wick on rising volume. Assemble the read.",
+        image: "wick-rejection",
         options: [
           "Random noise, no information",
           "Trend context + known demand zone + rejection wick + volume = a coherent long thesis with invalidation below the zone",
@@ -177,6 +193,7 @@ export const CHECKS = {
     questions: [
       {
         prompt: "Swings: high $88 → low $82 → high $86 → low $79. Label it.",
+        image: "trend-structure",
         options: [
           "Uptrend: HH + HL",
           "Downtrend: LH ($88→$86) + LL ($82→$79)",
@@ -188,6 +205,7 @@ export const CHECKS = {
       },
       {
         prompt: "In that downtrend, price rallies and closes decisively above the $86 lower high. What is this and what does it demand?",
+        image: "downtrend-structure",
         options: [
           "BOS down — short more",
           "CHoCH — the downtrend structure just failed; stop treating rallies as automatic shorts and reassess",
@@ -199,6 +217,7 @@ export const CHECKS = {
       },
       {
         prompt: "A 200-period MA is still falling while price has already printed CHoCH, a higher low, AND a higher high. Why the disagreement?",
+        image: "choch",
         options: [
           "The MA is broken",
           "Lag — long MAs average months of past prices and turn well after structure shifts; structure leads, long MAs confirm regimes",
@@ -210,6 +229,7 @@ export const CHECKS = {
       },
       {
         prompt: "RSI hits 78 during a strong uptrend, mid-move, far from any level. Per this unit, that reading alone is…",
+        image: "rsi-divergence",
         options: [
           "A short signal",
           "Context only — momentum extremes mid-trend routinely persist; extremes matter at range edges or meaningful zones",
@@ -221,6 +241,7 @@ export const CHECKS = {
       },
       {
         prompt: "Price returns for the FIRST time to a zone that launched a violent 3-day rally. The zone is also a prior support flip AND sits under a swing low's stop pocket that just got swept. Grade the long setup.",
+        image: "downtrend-structure",
         options: [
           "Weak — too many factors",
           "High quality: fresh zone + role-reversal level + post-sweep entry = independent evidence stacked with crisp invalidation",
@@ -232,6 +253,7 @@ export const CHECKS = {
       },
       {
         prompt: "TRAP: price wicks $0.15 above the swing high on one candle and instantly collapses. A trader calls it 'BOS — uptrend confirmed'. The liquidity-aware read?",
+        image: "wick-rejection",
         options: [
           "Correct call — any break counts",
           "More likely a sweep of buy-stops above the high; genuine breaks show ACCEPTANCE (closes and holding beyond), not one-wick pokes",
@@ -243,6 +265,7 @@ export const CHECKS = {
       },
       {
         prompt: "Given sweep behavior, your long's invalidation is below a swing low at $40.00. Where does the stop go, and what else must change?",
+        image: "liquidity-sweep",
         options: [
           "$39.99, maximum size",
           "Buffered beyond the pocket (e.g. ~$39.60) — and position size RECALCULATED smaller so dollar risk stays fixed",
@@ -254,6 +277,7 @@ export const CHECKS = {
       },
       {
         prompt: "A demand zone breaks on heavy volume and price ACCEPTS below it for three sessions. The zone's story now?",
+        image: "volume-conviction",
         options: [
           "Still demand — buy every touch forever",
           "Failed — and likely role-flipped: expect it to act as supply/resistance on retests from below",
@@ -273,12 +297,14 @@ export const CHECKS = {
     questions: [
       {
         prompt: "Account $8,000, risk 1% per trade. Entry $32, stop $30. Shares?",
+        image: "stop-bracket",
         options: ["80", "40", "400", "250"],
         correctIndex: 1,
         explanation: "Risk $80, stop distance $2 → $80 ÷ $2 = 40 shares. Check: 40 × $2 = $80 ✓",
       },
       {
         prompt: "Same account and risk. A different setup needs a stop $4 away from a $32 entry. Shares now — and what stayed constant?",
+        image: "stop-bracket",
         options: [
           "40 again",
           "20 shares — the dollar risk ($80) stayed constant while size adjusted to the wider stop",
@@ -290,6 +316,7 @@ export const CHECKS = {
       },
       {
         prompt: "System stats: 35% win rate, avg win +3R, avg loss -1R. Expectancy — and verdict?",
+        image: "expectancy-bars",
         options: [
           "-0.4R, losing system",
           "+0.4R per trade — profitable despite losing 65% of the time",
@@ -301,6 +328,7 @@ export const CHECKS = {
       },
       {
         prompt: "System comparison: A wins 75% with +0.4R winners; B wins 40% with +2.2R winners (both lose -1R). Which has the edge?",
+        image: "expectancy-bars",
         options: [
           "A — higher win rate always wins",
           "B: A = (0.75×0.4)−(0.25×1) = +0.05R (dies to costs); B = (0.4×2.2)−(0.6×1) = +0.28R",
@@ -312,6 +340,7 @@ export const CHECKS = {
       },
       {
         prompt: "You're down -2R today, feeling the pull to 'win it back'. Your plan's daily stop is -2R. The correct action and its rationale?",
+        image: "downtrend-structure",
         options: [
           "One more trade — rules are guidelines",
           "Done for the day: the daily stop exists because decision quality after losses is measurably degraded — it protects the account from tilted-you",
@@ -323,6 +352,7 @@ export const CHECKS = {
       },
       {
         prompt: "TRAP: 'My last 6 trades all won, so this setup is basically free money — I'm risking 10% on the next one.' Identify BOTH errors.",
+        image: "downtrend-structure",
         options: [
           "No errors — momentum is real",
           "6 trades is statistical noise (sample far too small), and 10% risk makes a normal losing streak account-threatening",
@@ -334,6 +364,7 @@ export const CHECKS = {
       },
       {
         prompt: "Binary event tonight (earnings) on your open long: stop $1.50 away, but similar events have gapped this stock $6+. What does risk management actually dictate?",
+        image: "gap-risk",
         options: [
           "The stop handles it — hold full size",
           "Manage EXPOSURE: reduce, hedge, or flatten — through gaps the position size, not the stop, is your only real control",
@@ -345,6 +376,7 @@ export const CHECKS = {
       },
       {
         prompt: "A trade sets up in dead after-hours liquidity: spread is 5× normal and your realistic stop sits inside pure noise. R:R 'looks' fine on paper. Session-aware verdict?",
+        image: "liquidity-sweep",
         options: [
           "Take it — paper R:R is everything",
           "Pass or wait for liquid hours: execution costs and noise-stops turn the paper edge negative in this environment",
@@ -356,6 +388,7 @@ export const CHECKS = {
       },
       {
         prompt: "Full integration: which sequence is the correct ORDER of a professional trade decision?",
+        image: "downtrend-structure",
         options: [
           "Size → entry → maybe a stop → hope",
           "Condition & session check → setup + confluence stack → invalidation level → R:R filter (≥ target) → size from fixed risk % → execute with bracket orders",
@@ -375,6 +408,7 @@ export const CHECKS = {
     questions: [
       {
         prompt: "Your journal (80 trades): sweep-reclaim longs +0.5R avg (40 trades); news-spike scalps -0.6R avg (40 trades). Overall you're barely negative. The data-driven move?",
+        image: "liquidity-sweep",
         options: [
           "Quit — overall negative means no hope",
           "Cut the news scalps, concentrate on sweep-reclaims: the journal just revealed a profitable trader hidden inside a losing aggregate",
@@ -386,6 +420,7 @@ export const CHECKS = {
       },
       {
         prompt: "A trade broke your entry rules and made +2R. A rule-following trade hit its stop for -1R. Grade them as PROCESS.",
+        image: "downtrend-structure",
         options: [
           "The winner was good, the loser bad",
           "The -1R was a GOOD trade (paid variance, process intact); the +2R was a BAD trade (reinforced indiscipline that compounds into disaster)",
@@ -397,6 +432,7 @@ export const CHECKS = {
       },
       {
         prompt: "Mid-session, tilted after two stops, you're SURE the R:R rule is what's holding you back and want to edit the plan right now. The discipline architecture says?",
+        image: "expectancy-bars",
         options: [
           "Edit it — conviction is signal",
           "Journal the idea; evaluate at the scheduled review against data; mid-session rule edits are tilt wearing a lab coat",
@@ -408,6 +444,7 @@ export const CHECKS = {
       },
       {
         prompt: "TRAP: fourth strategy this quarter, ~15 trades each, all abandoned mid-losing-streak. What has this trader actually learned about any of them?",
+        image: "downtrend-structure",
         options: [
           "Everything important",
           "Nothing — every sample was too small for expectancy to emerge from variance; each 'failure' was likely just a normal streak",
@@ -419,6 +456,7 @@ export const CHECKS = {
       },
       {
         prompt: "Journal cross-reference: trades tagged 'calm' run +0.3R; tagged 'frustrated' run -0.8R. Design the rule this evidence supports.",
+        image: "sr-zone",
         options: [
           "Trade angrier — intensity wins",
           "A behavioral circuit-breaker: e.g. mandatory 30-min cooldown after any stop-out, and no new entries while tagged tilted — evidence-based, not vibes-based",
@@ -430,6 +468,7 @@ export const CHECKS = {
       },
       {
         prompt: "After 9 straight winners you notice the thought: 'I've cracked it — time to loosen criteria and push size.' The trained response?",
+        image: "expectancy-bars",
         options: [
           "Obey it — you HAVE cracked it",
           "Flag it as the overconfidence signature: streaks are variance, criteria and sizing hold PRECISELY because the streak will end",
@@ -441,6 +480,7 @@ export const CHECKS = {
       },
       {
         prompt: "Final synthesis: what IS the 'edge' this whole course has been building?",
+        image: "plan-loop",
         options: [
           "A secret indicator combination",
           "A closed loop — costed execution, structural setups, fixed-risk sizing, expectancy measured from an honest journal, rules that evolve only by evidence — repeated with discipline until the math compounds",

@@ -12,6 +12,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price is rising rapidly. What's actually happening?",
+        image: "downtrend-structure",
         options: [
           "The exchange is raising the price",
           "Buyers are willing to pay progressively higher prices to get filled",
@@ -29,6 +30,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A stock shows bid $99.95 / ask $100.05. You buy at market. What do you pay?",
+        image: "bid-ask",
         options: ["$99.95", "$100.00", "$100.05", "Whatever you want"],
         correctIndex: 2,
         explanation: "Buying at market means accepting the best available seller price — the ask, $100.05.",
@@ -36,6 +38,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Same stock: bid $99.95 / ask $100.05. Immediately after buying at $100.05, you sell at market. What do you receive?",
+        image: "downtrend-structure",
         options: ["$100.05 — what you paid", "$99.95 — the bid", "$100.00 — the midpoint", "$100.15"],
         correctIndex: 1,
         explanation: "Selling at market means accepting the best available buyer price — the bid. You just lost $0.10 per share without price moving at all. That's the spread cost.",
@@ -43,6 +46,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You bought 500 shares crossing that $0.10 spread. What did the round trip cost you before the market even moved?",
+        image: "bid-ask",
         options: ["$5", "$50", "$500", "Nothing"],
         correctIndex: 1,
         explanation: "500 shares × $0.10 spread = $50. This is why spread matters more the bigger and more frequent your trades.",
@@ -54,6 +58,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which situation likely has the WIDEST spread?",
+        image: "bid-ask",
         options: [
           "A major index ETF at midday",
           "A large-cap tech stock at the open",
@@ -70,6 +75,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You place a market buy when the ask shows $50.00, but fill at $50.08. What happened?",
+        image: "downtrend-structure",
         options: [
           "The broker stole $0.08",
           "Slippage — available liquidity at $50.00 was taken before your full order filled",
@@ -82,6 +88,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: A friend says day-trading a stock with a huge 5% spread is fine 'because it moves a lot'. What's the flaw?",
+        image: "bid-ask",
         options: [
           "No flaw — volatility beats everything",
           "You start every trade 5% underwater; the move must beat the spread AND your risk just to break even",
@@ -94,6 +101,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Scenario: you trade a $10,000 account, 20 round trips per week, average spread+slippage cost of $8 per round trip. What's the yearly cost of execution alone (50 weeks)?",
+        image: "bid-ask",
         options: ["$400", "$800", "$8,000", "$80"],
         correctIndex: 2,
         explanation: "20 × $8 × 50 = $8,000 — 80% of the account, just in execution costs. This is why frequency and cost-awareness decide survival long before strategy does.",
@@ -115,6 +123,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which is the fundamental trade-off between order types?",
+        image: "order-map",
         options: [
           "Speed versus commission cost",
           "Certainty of getting filled versus certainty of the price you get",
@@ -131,6 +140,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "News breaks and your stock gaps down fast. You decide the trade thesis is dead. Best tool?",
+        image: "gap-risk",
         options: [
           "A limit order well above the market 'to get a good exit'",
           "A market order — certainty of exit matters more than exact price now",
@@ -148,6 +158,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price is $100. You want to buy a pullback into support at $97. Which order?",
+        image: "downtrend-structure",
         options: [
           "Buy limit at $97",
           "Buy stop at $97",
@@ -160,6 +171,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: price is $100 and you place a buy LIMIT at $103 'to make sure it fills'. What actually happens?",
+        image: "downtrend-structure",
         options: [
           "It waits for $103",
           "It fills immediately at the best available price (like a market order), since the market is already better than your limit",
@@ -176,6 +188,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You're long from $50 and decide your idea is wrong if price trades at $48. What do you place?",
+        image: "order-map",
         options: [
           "Sell limit at $48",
           "Sell stop at $48",
@@ -188,6 +201,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Your sell stop is at $48. Overnight, bad news gaps the stock open at $45. Where do you get filled?",
+        image: "gap-risk",
         options: [
           "Exactly $48 — that's guaranteed",
           "Around $45 — the stop triggered on the gap and filled at the next available price",
@@ -200,6 +214,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You want to buy ONLY IF price breaks above $105 resistance, confirming strength. Which order?",
+        image: "sr-zone",
         options: [
           "Buy limit at $105",
           "Buy stop at $105 (or just above)",
@@ -212,6 +227,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Scenario: you plan a long at $60 support, invalidation at $58, profit target $66. Which order set matches the plan?",
+        image: "sr-zone",
         options: [
           "Buy limit $60, sell stop $58, sell limit $66",
           "Buy stop $60, sell limit $58, sell stop $66",
@@ -224,6 +240,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: to 'avoid getting stopped out', a trader removes their stop-loss on a losing trade. What's the real effect?",
+        image: "stop-bracket",
         options: [
           "The loss can no longer grow",
           "They've converted a defined, planned loss into an undefined one — the single fastest route to blowing up",
@@ -250,6 +267,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Account $10,000, risking 1% per trade. What's the maximum this trade may lose?",
+        image: "stop-bracket",
         options: ["$1,000", "$100", "$10", "1% of the position"],
         correctIndex: 1,
         explanation: "1% of $10,000 = $100. That's the loss if the stop is hit — the number everything else is built around.",
@@ -262,6 +280,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Account $10,000, risk 1% ($100). Entry $25, stop $24. How many shares?",
+        image: "stop-bracket",
         options: ["25 shares", "100 shares", "400 shares", "1,000 shares"],
         correctIndex: 1,
         explanation: "Stop distance $1. $100 ÷ $1 = 100 shares. Check: 100 shares × $1 = $100 = 1% ✓",
@@ -269,6 +288,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Same account, same 1% risk. Entry $25, but this setup's stop belongs at $23 (distance $2). Shares now?",
+        image: "stop-bracket",
         options: ["100 — same as before", "50 shares", "200 shares", "It's untradeable"],
         correctIndex: 1,
         explanation: "$100 ÷ $2 = 50 shares. Wider stop → smaller size, SAME dollar risk. This is the mechanism that makes stop width a sizing input rather than a danger.",
@@ -276,6 +296,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: a trader always buys 500 shares 'because that's my size', wherever the stop lands. What's actually varying wildly trade to trade?",
+        image: "downtrend-structure",
         options: [
           "Nothing — consistency achieved",
           "Their real dollar risk: 500 shares × a $0.50 stop risks $250; × a $3 stop risks $1,500",
@@ -288,6 +309,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Why do professionals talk in 1–2% risk per trade rather than 10%?",
+        image: "stop-bracket",
         options: [
           "Regulation forces it",
           "Survivability: at 1% risk, a 10-loss streak costs ~10% of the account; at 10% risk, the same streak destroys ~65% — and streaks WILL happen",
@@ -300,6 +322,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Drawdown math: you lose 50% of your account. What gain do you now need just to get back to even?",
+        image: "stop-bracket",
         options: ["50%", "75%", "100%", "25%"],
         correctIndex: 2,
         explanation: "From $10,000 to $5,000 is -50%; getting from $5,000 back to $10,000 requires +100%. Losses hurt more than the same-sized gains help — the asymmetry behind all risk discipline.",
@@ -307,6 +330,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Gap reality check (from Unit 1): your stop is $2 away, sized for $100 risk — but overnight news gaps price $5 past your stop. Actual loss?",
+        image: "gap-risk",
         options: [
           "$100 — stops are guarantees",
           "About $250 — fills happen at the gap price, not the stop price",
@@ -333,6 +357,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A 20-period moving average is simply…",
+        image: "ma-pullback",
         options: [
           "The price 20 days in the future",
           "The average of the last 20 closes, redrawn each new bar",
@@ -345,6 +370,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price is above a rising 50-period MA, and pullbacks keep finding buyers near it. How are trend traders using that MA?",
+        image: "downtrend-structure",
         options: [
           "As a magic line that cannot break",
           "As a dynamic reference for trend health and a pullback zone to look for entries",
@@ -362,6 +388,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: a trader waits for a 200-period MA to turn downward before considering any trend change. What's the cost of this filter?",
+        image: "ma-pullback",
         options: [
           "None — later is always better",
           "Massive lag: by the time a 200 MA turns, a large part of the reversal has already happened",
@@ -379,6 +406,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "RSI has read 75–85 for three weeks during a powerful uptrend. The 'signal' many beginners take — and its usual result?",
+        image: "rsi-divergence",
         options: [
           "Buy more — high RSI means strength forever",
           "Short the 'overbought' reading — and get run over as the trend continues",
@@ -391,6 +419,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Where does an RSI extreme carry the most useful information?",
+        image: "rsi-divergence",
         options: [
           "Mid-trend, against the trend",
           "At the edge of an established range, agreeing with a structural level",
@@ -403,6 +432,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "DIVERGENCE: price makes a higher high, RSI makes a lower high. What is this suggesting?",
+        image: "downtrend-structure",
         options: [
           "Nothing, ever",
           "The new high came with less momentum — the trend may be tiring (a clue, not a trigger)",
@@ -415,6 +445,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: a trader stacks 6 indicators; all derive from the same closing prices, and all say 'buy'. How much independent confirmation is that?",
+        image: "downtrend-structure",
         options: [
           "Six independent confirmations",
           "Roughly one — they're re-processing the same input, so they mostly agree by construction",
@@ -442,6 +473,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You risked $80; the trade made $200. In R?",
+        image: "expectancy-bars",
         options: ["+1.2R", "+2.5R", "+4R", "-2.5R"],
         correctIndex: 1,
         explanation: "$200 ÷ $80 = 2.5R. Whether the account is $1k or $1M, +2.5R means the same thing about the QUALITY of the trade.",
@@ -449,6 +481,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Planned reward:risk — entry $40, stop $38, target $46. What's the R:R of the plan?",
+        image: "expectancy-bars",
         options: ["1:1", "2:1", "3:1", "6:1"],
         correctIndex: 2,
         explanation: "Risk $2, reward $6 → 3:1 (a +3R win if it hits). This number exists BEFORE entry — good trades are selected partly on it.",
@@ -460,6 +493,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "System: 40% win rate, winners +2.5R, losers -1R. Expectancy per trade?",
+        image: "expectancy-bars",
         options: [
           "-0.1R — losing system",
           "+0.4R — profitable",
@@ -472,6 +506,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "System B: 70% win rate, winners +0.5R, losers -1R. Expectancy?",
+        image: "expectancy-bars",
         options: [
           "+0.05R — barely positive, likely negative after costs",
           "+0.7R — excellent",
@@ -484,6 +519,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: to 'improve the R:R', a trader picks a target 10R away on a setup that realistically never runs that far, and a stop so tight it's inside the noise. What's wrong?",
+        image: "downtrend-structure",
         options: [
           "Nothing — bigger planned R:R is always better",
           "Planned R:R only matters if the target is REACHABLE and the stop survivable; fantasy targets + noise-stops produce a great-looking plan that loses constantly",
@@ -496,6 +532,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Your journal after 50 trades: 45% wins, avg win +1.8R, avg loss -1.05R (slippage makes losses slightly worse than -1R). Expectancy?",
+        image: "expectancy-bars",
         options: [
           "+0.23R per trade — a real, measurable edge",
           "-0.23R",
@@ -508,6 +545,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "With +0.23R expectancy and 1% risk per trade, roughly what does 100 trades produce (ignoring compounding)?",
+        image: "trend-structure",
         options: [
           "About +23% on the account",
           "About +2.3%",
@@ -534,6 +572,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which session most often builds the day's initial range that later sessions react to?",
+        image: "range-vs-trend",
         options: ["New York", "London", "Asia", "None — it's uniform"],
         correctIndex: 2,
         explanation: "Lower participation during Asian hours (for Western instruments and FX majors) typically produces tighter, rangier trade — a reference box for what follows.",
@@ -541,6 +580,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "London opens and immediately spikes below the Asian session low — triggering stops — then reverses and rallies for hours. Which two concepts from earlier units just combined?",
+        image: "downtrend-structure",
         options: [
           "Divergence and dividends",
           "A liquidity sweep of the Asian low + session-open volatility injection",
@@ -557,6 +597,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A day trader keeps losing money trading the hours AFTER New York's morning momentum dies down, in thin afternoon chop. The session-aware fix?",
+        image: "session-clock",
         options: [
           "Trade those hours twice as hard",
           "Concentrate trading where their strategy's conditions actually occur (e.g. the overlap) and stand down in the chop",
@@ -569,6 +610,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "How does the session lens change how you read this game's daily-bar scenarios?",
+        image: "session-clock",
         options: [
           "It doesn't apply to any timeframe",
           "Daily bars each CONTAIN a full session cycle — long wicks often mark intraday session sweeps; the lesson's logic scales into how bars form",
@@ -581,6 +623,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: a strategy backtested only on London-session data gets deployed 24 hours a day. Likely outcome?",
+        image: "session-clock",
         options: [
           "Identical performance around the clock",
           "Degraded results — the edge was partly session-specific (volatility, spreads, participation all differ off-session)",
@@ -593,6 +636,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A simple session framework in three steps — pick the right order:",
+        image: "session-clock",
         options: [
           "Trade Asia blind → ignore London → sleep through NY",
           "Mark the Asian range → watch how London treats its edges (break & hold vs sweep & reverse) → use that read as bias into New York",
@@ -620,6 +664,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A daily candle: open $50, high $55, low $49, close $54. Describe the body.",
+        image: "candle-anatomy",
         options: [
           "From $49 to $55",
           "From $50 to $54 — bullish",
@@ -632,6 +677,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Same candle: open $50, high $55, low $49, close $54. What does the upper wick tell you?",
+        image: "wick-rejection",
         options: [
           "Nothing",
           "Price reached $55 but sellers pushed it back to $54 by the close",
@@ -648,6 +694,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "After a strong multi-day rally, a doji forms (tiny body, long wicks both sides). Best read?",
+        image: "doji",
         options: [
           "Guaranteed reversal — short immediately",
           "The one-way buying pressure has paused; watch the next candle for who wins",
@@ -660,6 +707,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A candle has a long LOWER wick and closes near its high after dipping into a support area. What likely happened during the period?",
+        image: "wick-rejection",
         options: [
           "Sellers held control throughout",
           "Price sold off, buyers stepped in at support, and drove price back up strongly",
@@ -676,6 +724,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A daily candle closed strongly bullish. On the hourly chart, the same day most likely shows…",
+        image: "downtrend-structure",
         options: [
           "One giant candle",
           "A sequence of smaller candles that net out to that daily gain — possibly with dips along the way",
@@ -688,6 +737,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: you spot a 'perfect' bullish hammer on the 5-minute chart, but the daily chart is in a strong downtrend below all resistance. What's the honest read?",
+        image: "downtrend-structure",
         options: [
           "The 5-minute signal overrides everything — go long big",
           "A minor counter-trend blip inside a dominant downtrend — low-quality long at best",
@@ -700,6 +750,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Volume shows 3× average on a big bullish breakout candle. Why does that matter?",
+        image: "volume-conviction",
         options: [
           "It doesn't — volume is decoration",
           "High volume means broad participation, making the move more likely to be genuine rather than a thin-market blip",
@@ -727,6 +778,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price bounced at $98.80, $99.10, and $99.05 across three separate declines. Where's support?",
+        image: "sr-zone",
         options: [
           "Exactly $98.80",
           "A zone roughly spanning $98.80–$99.10",
@@ -743,6 +795,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which level likely carries the MOST weight?",
+        image: "sr-zone",
         options: [
           "A level touched once, three years ago, on low volume",
           "A level tested multiple times recently, visible on the daily chart, near a round number",
@@ -760,6 +813,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price breaks decisively below $200 support, then rallies back to $200. What's the higher-probability behavior there?",
+        image: "downtrend-structure",
         options: [
           "It slices straight back up through — old support always holds",
           "Sellers defend $200 (old support acting as new resistance); rejection is likely",
@@ -772,6 +826,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Scenario: you want to long a bounce at $150 support. Where does the stop-loss logically belong?",
+        image: "downtrend-structure",
         options: [
           "At $150 exactly",
           "Somewhat below the zone — e.g. $148.50 — where the support idea is genuinely invalidated",
@@ -784,6 +839,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: price touches your support level for the 7th time in two weeks, each bounce weaker than the last. A friend says 'it's held 6 times, it's rock solid'. Better read?",
+        image: "sr-zone",
         options: [
           "Agreed — more touches always mean stronger support",
           "Repeated rapid tests with weakening bounces suggest buyers there are being exhausted — the level may be about to fail",
@@ -796,6 +852,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You mark support at $75 on the daily chart. On the 5-minute chart, price is chopping around $75.20. What do you actually expect AT the zone?",
+        image: "downtrend-structure",
         options: [
           "A perfect single-tick bounce at exactly $75.00",
           "Messy two-sided trading around the zone, possibly brief pokes below, before any clean reaction",
@@ -823,6 +880,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price makes: high $110 → low $104 → high $116 → low $109 → high $122. What condition is this?",
+        image: "range-vs-trend",
         options: [
           "A range",
           "An uptrend — higher highs and higher lows",
@@ -835,6 +893,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price bounces between roughly $48 and $52 nine times over a month. Which trades fit this condition?",
+        image: "trend-structure",
         options: [
           "Buy every breakout above $52 aggressively",
           "Fade the edges — buy near $48, sell near $52 — until the range clearly breaks",
@@ -851,6 +910,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Strong uptrend. Price just spiked 8% in two days and is far above any support. Best action for a would-be buyer?",
+        image: "sr-zone",
         options: [
           "Chase it now with a huge position — momentum never pauses",
           "Wait for a pullback toward structure, where risk can be defined against a real level",
@@ -863,6 +923,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: 'It's gone up so much, it MUST come down soon.' What's wrong with shorting purely on this?",
+        image: "range-vs-trend",
         options: [
           "Nothing — overextension is a complete strategy",
           "Trends regularly persist far longer than feels reasonable; 'too high' is an opinion, not an invalidation level",
@@ -875,6 +936,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You've taken 4 straight losses buying breakouts that reversed on you. Zooming out, price has been inside $95–$105 for six weeks. What was the real error?",
+        image: "range-vs-trend",
         options: [
           "Bad luck, nothing more",
           "Applying a trend/breakout playbook inside a range — a condition mismatch",
@@ -887,6 +949,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "An uptrend's pullbacks start getting deeper, rallies get shorter, and price begins closing below the levels that previously launched bounces. What's this?",
+        image: "downtrend-structure",
         options: [
           "A healthier, stronger trend",
           "Early evidence of transition — the trend may be ending, tighten risk or stand aside",
@@ -899,6 +962,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "In the simulator, bars start playing and you feel the urge to trade immediately. Per this lesson, what's the disciplined first step?",
+        image: "range-vs-trend",
         options: [
           "Trade within 3 bars, always — speed wins",
           "Watch until you can name the condition (trend / range / transition), then apply the matching playbook",
@@ -926,6 +990,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Swings: low $40 → high $48 → low $43 → high $52 → low $46. Label the structure.",
+        image: "trend-structure",
         options: [
           "Downtrend: LH + LL",
           "Uptrend: HH ($48→$52) and HL ($40→$43→$46)",
@@ -942,6 +1007,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Uptrend with last swing high at $52 and last HL at $46. Price pushes to $53.50. What just happened?",
+        image: "trend-structure",
         options: [
           "Change of character — the trend reversed",
           "Break of structure — uptrend continuation confirmed",
@@ -959,6 +1025,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Same uptrend, HL at $46. Price now closes decisively at $44.80. What's the correct label and response?",
+        image: "trend-structure",
         options: [
           "BOS — buy more aggressively",
           "CHoCH — the uptrend's structure is broken; stop treating it as a clean uptrend and reassess",
@@ -971,6 +1038,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "After a CHoCH in an uptrend, what sequence would CONFIRM a new downtrend forming?",
+        image: "choch",
         options: [
           "An immediate new all-time high",
           "Price setting a lower high, then breaking to a lower low",
@@ -983,6 +1051,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: price pokes $0.10 above a swing high on one 1-minute wick, then collapses back. A trader declares 'BOS! Trend confirmed up!' What's the issue?",
+        image: "wick-rejection",
         options: [
           "Nothing — any touch counts",
           "A marginal wick-through on a tiny timeframe is weak evidence — closes beyond the level and the timeframe you actually trade matter",
@@ -995,6 +1064,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Practical: in an uptrend after a fresh BOS, where's the highest-quality long entry zone?",
+        image: "trend-structure",
         options: [
           "Immediately at the breakout price, chasing",
           "On the pullback — as price sets a new higher low around prior structure",
@@ -1007,6 +1077,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Multi-step: you're long in an uptrend. Price makes a lower high at $58 (prior high $60), then breaks the $54 higher low. Structure says what about your position?",
+        image: "downtrend-structure",
         options: [
           "Everything is fine — hold and hope",
           "LH + broken HL = the uptrend that justified the position is gone; the exit case is strong",
@@ -1034,6 +1105,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price drifts sideways at $30–$31 for days, then explodes to $38 in two sessions. What did that base likely become?",
+        image: "session-clock",
         options: [
           "A supply zone",
           "A demand zone at $30–$31 — where the buying that launched the rally accumulated",
@@ -1046,6 +1118,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Why does price often react when RETURNING to a zone it launched from?",
+        image: "supply-demand",
         options: [
           "Charts have gravity",
           "Unfilled orders and traders who missed the first move are waiting there to act",
@@ -1062,6 +1135,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Two demand zones: Zone A launched a big rally and has never been revisited. Zone B has been tapped four times with progressively weaker bounces. Which deserves more trust?",
+        image: "downtrend-structure",
         options: [
           "Zone B — more touches means stronger",
           "Zone A — fresh, with its original orders likely intact",
@@ -1074,6 +1148,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Grading zones: which departure marks the STRONGEST zone?",
+        image: "supply-demand",
         options: [
           "A slow drift away over two weeks",
           "An explosive, high-volume move that left the zone in one or two candles and traveled far",
@@ -1086,6 +1161,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Scenario: price returns to a fresh daily demand zone at $84–$86 in an overall uptrend. Build the trade.",
+        image: "downtrend-structure",
         options: [
           "Short at $86 with no stop",
           "Look for longs in the zone as buyers react, stop below ~$83.50 (zone invalidated), target toward prior highs",
@@ -1098,6 +1174,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: price slices straight through your demand zone and closes well below it on strong volume. What now?",
+        image: "volume-conviction",
         options: [
           "Buy more — the zone owes you a bounce",
           "The zone failed; its story is over, and the failure itself is information (supply is in control there now)",
@@ -1110,6 +1187,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "How do supply/demand zones relate to the support/resistance you learned earlier?",
+        image: "supply-demand",
         options: [
           "They're unrelated concepts",
           "Same underlying phenomenon — clustered orders at remembered prices — with zones emphasizing the ORIGIN of explosive moves",
@@ -1136,6 +1214,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Where is the densest pool of SELL orders (stops) most likely resting?",
+        image: "downtrend-structure",
         options: [
           "Randomly scattered everywhere",
           "Just below an obvious, widely-watched swing low",
@@ -1153,6 +1232,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price dips $0.30 under a major swing low, triggers stops, then reverses violently and closes back above the level. What most likely just happened?",
+        image: "trend-structure",
         options: [
           "A genuine breakdown that failed by accident",
           "A liquidity sweep — stops below the low were harvested to fill large buy orders",
@@ -1165,6 +1245,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "How does a sweep DIFFER from a real breakdown?",
+        image: "liquidity-sweep",
         options: [
           "They're identical",
           "A sweep rejects and RECLAIMS the level quickly; a real breakdown holds below it and builds acceptance (closes, retests from beneath)",
@@ -1177,6 +1258,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Practical stop placement: given sweep behavior, where's the smarter stop for a long against a swing low at $70.00?",
+        image: "liquidity-sweep",
         options: [
           "Exactly $69.99 — as tight as possible",
           "With buffer beyond the obvious pocket — e.g. $69.40 — sized so the position still respects your risk limit",
@@ -1189,6 +1271,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: your long gets swept out for a small loss, then price reverses and rallies exactly as you'd predicted. The correct takeaway?",
+        image: "downtrend-structure",
         options: [
           "The market is rigged against you personally — quit",
           "Your stop sat inside the liquidity pocket; the read was fine, the placement wasn't. Adjust placement, keep the process",
@@ -1201,6 +1284,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Advanced entry: some traders WAIT for the sweep of a low before buying, rather than buying the low itself. Why?",
+        image: "liquidity-sweep",
         options: [
           "It feels more dramatic",
           "Post-sweep, the stop-fuel below is spent and large buyers have shown their hand — often a cleaner low with clearer invalidation",
@@ -1213,6 +1297,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Connect the units: a 'BOS' that turns out to be a one-wick poke above a high, instantly reversing — through the liquidity lens, that was likely…",
+        image: "wick-rejection",
         options: [
           "A confirmed trend continuation",
           "A sweep of buy-stops above the high, not a genuine structural break",
@@ -1239,6 +1324,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "What happens to spreads and slippage in the seconds around a major scheduled release (e.g. a rate decision)?",
+        image: "bid-ask",
         options: [
           "They tighten — more efficiency",
           "Spreads blow out and slippage spikes as liquidity providers pull back from uncertainty",
@@ -1251,6 +1337,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "You hold a long with a stop $1 below. A binary event (earnings) hits tonight. What's the honest risk picture?",
+        image: "news-spike",
         options: [
           "Max loss is $1 × shares — stops guarantee it",
           "Gap risk: price can open far beyond the stop, making the real worst case a multiple of planned risk",
@@ -1267,6 +1354,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "A company reports record profits, yet the stock drops 8%. Most likely explanation?",
+        image: "plan-loop",
         options: [
           "Markets are simply irrational",
           "Expectations were even higher — the 'good' number was a negative SURPRISE relative to what was priced in",
@@ -1279,6 +1367,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: 30 seconds after a data release, price whips $2 up then $3 down. A trader jumps in 'to catch the move'. What are they actually fighting?",
+        image: "downtrend-structure",
         options: [
           "A calm, orderly market",
           "Algorithmic repricing at machine speed, huge spreads, and slippage — a coin flip with terrible execution",
@@ -1291,6 +1380,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "The practical weekly habit this lesson demands — even for a purely technical trader:",
+        image: "news-spike",
         options: [
           "Memorize every economic statistic",
           "Check the economic calendar: know which days/hours carry high-impact events for what you trade, and plan exposure around them",
@@ -1303,6 +1393,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "How do news shocks interact with the levels and zones you've mapped?",
+        image: "news-spike",
         options: [
           "News deletes all technicals permanently",
           "Events often provide the ENERGY that finally breaks a level or violently sweeps one — technicals frame the map, news supplies the catalyst",
@@ -1329,6 +1420,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Why record SETUP TYPE on every trade rather than just P&L?",
+        image: "plan-loop",
         options: [
           "It makes the spreadsheet prettier",
           "So results can be grouped by setup — revealing which specific patterns carry your edge and which quietly bleed",
@@ -1341,6 +1433,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Your journal (60 trades): pullback entries +0.45R avg over 30 trades; range fades -0.25R avg over 30 trades. The evidence-based move?",
+        image: "downtrend-structure",
         options: [
           "Change nothing — variety is strength",
           "Concentrate on pullbacks; cut or paper-trade the fades until you find why they fail",
@@ -1357,6 +1450,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Why is a rule-breaking WIN dangerous rather than lucky?",
+        image: "plan-loop",
         options: [
           "It isn't — money is money",
           "It reinforces the exact behavior that, repeated, produces the catastrophic losses your rules exist to prevent",
@@ -1369,6 +1463,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: a trader journals only winning trades 'to stay positive'. What does their expectancy calculation now produce?",
+        image: "expectancy-bars",
         options: [
           "A conservative estimate",
           "Fiction — expectancy requires ALL outcomes; censored data makes every metric meaningless",
@@ -1381,6 +1476,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "The emotional-state column, reviewed monthly, shows: trades tagged 'frustrated' average -0.8R; trades tagged 'calm' average +0.3R. What did the journal just find?",
+        image: "trend-structure",
         options: [
           "Astrology",
           "A measurable, personal risk factor — a rule like 'no new trades within 30 min of a stop-out' now has evidence behind it",
@@ -1393,6 +1489,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "In this simulator, what's the equivalent practice?",
+        image: "plan-loop",
         options: [
           "Play fast and remember nothing",
           "After each session, note the setups taken, whether each had the full confluence stack, achieved R, and one lesson — same habit, zero real money",
@@ -1419,6 +1516,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which entry rule belongs in a real plan?",
+        image: "plan-loop",
         options: [
           "'Buy when it looks strong'",
           "'Long only if: daily uptrend (HH/HL) + pullback into a fresh demand zone + sweep-and-reclaim trigger + achievable R:R ≥ 2'",
@@ -1431,6 +1529,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Why does a DAILY loss limit (e.g. stop trading at -2R on the day) exist separately from per-trade risk?",
+        image: "expectancy-bars",
         options: [
           "Bureaucracy",
           "It caps the tilt cascade — the well-documented pattern where losses degrade decision quality and each next trade gets worse",
@@ -1447,6 +1546,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Wednesday, mid-session, two losses in: you feel your R:R minimum is 'too strict' and want to lower it right now. Per the plan discipline?",
+        image: "expectancy-bars",
         options: [
           "Change it immediately — flexibility!",
           "Note the idea in the journal; evaluate it at the scheduled review against the data; change nothing mid-session",
@@ -1459,6 +1559,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: after 15 losing trades over three weeks, a trader scraps the entire plan and adopts a new strategy — for the fourth time this quarter. What can they now measure?",
+        image: "plan-loop",
         options: [
           "Everything, perfectly",
           "Nothing — no strategy ever got enough trades for its expectancy to emerge from variance; they've been sampling noise repeatedly",
@@ -1471,6 +1572,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Roughly how many trades of a setup do you need before its expectancy estimate deserves ANY confidence?",
+        image: "trend-structure",
         options: [
           "3–5",
           "Dozens at minimum — variance dominates small samples; 30–50+ per setup is a reasonable floor before drawing conclusions",
@@ -1483,6 +1585,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which is the correct relationship between plan, journal, and review?",
+        image: "plan-loop",
         options: [
           "They're three unrelated chores",
           "Plan defines the rules → journal records execution and outcomes → review compares them and evolves the plan — a closed improvement loop",
@@ -1509,6 +1612,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "After a stop-out, you feel a hot urge to re-enter immediately at bigger size to 'get it back'. Name the pattern and the system-level defense.",
+        image: "tilt-spiral",
         options: [
           "Intuition; obey it",
           "Revenge trading; defenses like a mandatory cooldown after any stop-out and the daily loss limit exist precisely for this moment",
@@ -1525,6 +1629,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Your journal shows avg win +0.6R against planned +2R targets, while losses reliably hit the full -1R. What's happening and what's the structural fix?",
+        image: "downtrend-structure",
         options: [
           "Perfect trading",
           "Loss-aversion exits: winners cut at the first wobble. Fixes are structural — predefined targets, scaling rules, or moving stops only per written criteria, not per anxiety",
@@ -1537,6 +1642,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "FOMO check: a stock is up 30% today and everywhere on social media. You have no setup, no level, no plan — just the fear of missing it. The professional read?",
+        image: "plan-loop",
         options: [
           "Buy first, think later — it's running!",
           "No setup = no trade; chasing vertical moves means entering where late buyers get trapped, with no definable invalidation",
@@ -1549,6 +1655,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: after 8 straight winners, a trader concludes they've 'figured it out', triples risk per trade, and loosens their entry criteria. What's operating?",
+        image: "expectancy-bars",
         options: [
           "Earned mastery",
           "Overconfidence after a hot streak — variance being misread as skill, at the precise moment bigger risk meets sloppier entries",
@@ -1561,6 +1668,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which reframe makes a rule-following -1R loss easier to take — and is also TRUE?",
+        image: "downtrend-structure",
         options: [
           "'I failed and should feel bad'",
           "'That's one paid installment of variance in a positive-expectancy process — the cost of doing business, logged and done'",
@@ -1573,6 +1681,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "State management: which pre-session check is actually load-bearing rather than ritual?",
+        image: "downtrend-structure",
         options: [
           "Lucky socks",
           "A honest go/no-go: slept? calm? not chasing yesterday? If no — reduce size or don't trade; your state is part of the system",
@@ -1585,6 +1694,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Final integration: where does psychology actually live in everything you've built across this course?",
+        image: "downtrend-structure",
         options: [
           "In motivational quotes",
           "Inside the structures: sizing that survives streaks, plans a stranger could follow, journals that override memory, limits that fire before tilt does — discipline is engineered, not summoned",
@@ -1611,6 +1721,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Which pair is genuinely INDEPENDENT confluence?",
+        image: "confluence-stack",
         options: [
           "RSI(14) oversold + RSI(7) oversold",
           "A fresh daily demand zone + a liquidity sweep of the low just in front of it",
@@ -1623,6 +1734,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Score these two longs. A: uptrend + pullback to fresh demand + sweep of a minor low + 3:1 achievable R:R. B: 'RSI is low'. What separates them?",
+        image: "liquidity-sweep",
         options: [
           "Nothing — both are fine",
           "A stacks independent evidence with defined invalidation; B is a single derivative reading with no structure behind it",
@@ -1639,6 +1751,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Price is mid-range, far from any level, no trend, no trigger — but you're bored and 'feel' it's going up. Per the filter?",
+        image: "range-vs-trend",
         options: [
           "Small punt is harmless",
           "No stack, no trade — this is exactly the impulse the filter exists to block",
@@ -1651,6 +1764,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "TRAP: after deciding you want to be long, you find five reasons supporting it and dismiss three warnings. What's happening?",
+        image: "sr-zone",
         options: [
           "Excellent research",
           "Confirmation bias dressed as confluence — evidence gathered AFTER the conclusion isn't independent of your desire",
@@ -1663,6 +1777,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Confluence also applies to EXITS. Your long approaches: prior swing high + a fresh supply zone + your 2.5R target, all within the same band. What is that band?",
+        image: "downtrend-structure",
         options: [
           "A reason to add size",
           "A logical take-profit area — multiple reasons for sellers to appear are stacked there",
@@ -1675,6 +1790,7 @@ export const LESSONS = {
       {
         type: "question",
         prompt: "Does more confluence mean bigger position size?",
+        image: "stop-bracket",
         options: [
           "Yes — 10x size on 'perfect' setups",
           "Risk stays within your fixed per-trade limit; confluence selects WHICH trades to take, it doesn't suspend sizing rules",

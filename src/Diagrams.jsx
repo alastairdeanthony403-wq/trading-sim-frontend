@@ -283,6 +283,203 @@ function RsiDivergence() {
   );
 }
 
+
+function WickRejection() {
+  return (
+    <Frame>
+      <rect x={40} y={168} width={480} height={24} fill="var(--green-soft)" stroke="var(--green)" strokeDasharray="5 4" rx="2" />
+      <Label x={46} y={210} fill="var(--green)" size="s">SUPPORT ZONE</Label>
+      <C x={160} yO={80} yC={120} yH={70} yL={130} />
+      <C x={220} yO={120} yC={150} yH={112} yL={160} />
+      <C x={280} yO={150} yC={140} yH={135} yL={188} w={18} />
+      <C x={340} yO={138} yC={95} yH={88} yL={145} />
+      <Dash x1={280} y1={150} x2={280} y2={188} stroke="var(--amber)" />
+      <path d="M 306 185 L 288 183 M 296 176 L 288 183 L 297 189" stroke="var(--amber)" strokeWidth="1.5" fill="none" />
+      <Label x={312} y={188} size="s" fill="var(--amber)">long lower wick = dip bought back up</Label>
+      <Label x={280} y={228} anchor="middle" fill={T.mut}>Sellers pushed into support — buyers rejected the lows and won the candle</Label>
+    </Frame>
+  );
+}
+
+function Doji() {
+  return (
+    <Frame>
+      <C x={100} yO={190} yC={150} yH={144} yL={196} />
+      <C x={160} yO={150} yC={110} yH={104} yL={156} />
+      <C x={220} yO={110} yC={72} yH={66} yL={116} />
+      <g>
+        <line x1={290} y1={40} x2={290} y2={125} stroke={T.txt} strokeWidth="2" />
+        <rect x={281} y={78} width={18} height={5} fill={T.txt} rx="1" />
+      </g>
+      <Dash x1={310} y1={80} x2={392} y2={80} />
+      <Label x={398} y={76} size="s">DOJI: tiny body,</Label>
+      <Label x={398} y={90} size="s">long wicks both sides</Label>
+      <Label x={290} y={150} anchor="middle" size="s" fill="var(--amber)">indecision — the one-way buying paused</Label>
+      <Label x={280} y={225} anchor="middle" fill={T.mut}>After a strong run, a doji = both sides fought to a draw. Watch the NEXT candle.</Label>
+    </Frame>
+  );
+}
+
+function DowntrendStructure() {
+  return (
+    <Frame>
+      <polyline points="40,40 130,130 190,85 300,175 360,125 500,215"
+        fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx={130} cy={130} r="5" fill="var(--red)" /><Label x={130} y={150} anchor="middle" size="s">LOW</Label>
+      <circle cx={190} cy={85} r="5" fill="var(--amber)" /><Label x={190} y={73} anchor="middle" size="s" fill="var(--amber)">LH — lower high</Label>
+      <circle cx={300} cy={175} r="5" fill="var(--red)" /><Label x={300} y={195} anchor="middle" size="s">LL — lower low</Label>
+      <circle cx={360} cy={125} r="5" fill="var(--amber)" /><Label x={372} y={120} size="s" fill="var(--amber)">LH</Label>
+      <Label x={280} y={232} anchor="middle" fill={T.mut}>Downtrend skeleton: falling highs AND falling lows</Label>
+    </Frame>
+  );
+}
+
+function VolumeConviction() {
+  return (
+    <Frame>
+      <Dash x1={40} y1={90} x2={520} y2={90} stroke="var(--amber)" />
+      <Label x={44} y={82} size="s" fill="var(--amber)">resistance</Label>
+      <C x={150} yO={140} yC={60} yH={50} yL={148} w={20} />
+      <rect x={132} y={165} width={36} height={40} fill="var(--green)" rx="2" />
+      <Label x={150} y={222} anchor="middle" size="s" fill="var(--green)">3× volume</Label>
+      <Label x={150} y={40} anchor="middle" size="s" fill="var(--green)">real breakout ✓</Label>
+      <C x={390} yO={130} yC={78} yH={68} yL={138} w={20} />
+      <rect x={378} y={193} width={24} height={12} fill="var(--red)" rx="2" />
+      <Label x={390} y={222} anchor="middle" size="s" fill="var(--red)">thin volume</Label>
+      <Label x={390} y={54} anchor="middle" size="s" fill="var(--red)">suspect — easy to fade</Label>
+      <Label x={280} y={236} anchor="middle" size="s" fill={T.mut}>Same candle, different conviction — volume is the participation meter</Label>
+    </Frame>
+  );
+}
+
+function GapRisk() {
+  return (
+    <Frame>
+      <polyline points="40,90 100,110 160,95 220,105" fill="none" stroke={T.txt} strokeWidth="2.5" />
+      <Dash x1={40} y1={140} x2={520} y2={140} stroke="var(--red)" />
+      <Label x={44} y={134} size="s" fill="var(--red)">your stop $48</Label>
+      <circle cx={220} cy={105} r="4" fill={T.txt} />
+      <Label x={228} y={100} size="s">last close $50</Label>
+      <rect x={250} y={60} width={70} height={150} fill="var(--panel-raised)" rx="2" />
+      <Label x={285} y={130} anchor="middle" size="s" fill="var(--amber)">overnight</Label>
+      <Label x={285} y={144} anchor="middle" size="s" fill="var(--amber)">news</Label>
+      <polyline points="340,195 420,185 500,200" fill="none" stroke="var(--red)" strokeWidth="2.5" />
+      <circle cx={340} cy={195} r="5" fill="var(--red)" />
+      <Label x={348} y={212} size="s" fill="var(--red)">opens $45 — fill happens HERE,</Label>
+      <Label x={348} y={226} size="s" fill="var(--red)">not at the stop</Label>
+      <Dash x1={220} y1={105} x2={340} y2={195} stroke="var(--red)" />
+      <Label x={280} y={40} anchor="middle" fill={T.mut}>Stops cap normal losses — gaps jump straight past them</Label>
+    </Frame>
+  );
+}
+
+function ExpectancyBars() {
+  return (
+    <Frame>
+      <Label x={40} y={30} size="s" fill={T.txt}>100 trades · 40% win rate · winners +2.5R · losers -1R</Label>
+      <rect x={60} y={60} width={200} height={44} fill="var(--green-soft)" stroke="var(--green)" rx="2" />
+      <Label x={160} y={86} anchor="middle" fill="var(--green)">40 wins × 2.5R = +100R</Label>
+      <rect x={60} y={120} width={300} height={44} fill="var(--red-soft)" stroke="var(--red)" rx="2" />
+      <Label x={210} y={146} anchor="middle" fill="var(--red)">60 losses × 1R = -60R</Label>
+      <Label x={60} y={196} fill="var(--amber)">NET: +40R — losing MOST trades, solidly profitable</Label>
+      <Label x={60} y={222} size="s" fill={T.mut}>Expectancy = (win% × avg win) − (loss% × avg loss) — the only scoreboard</Label>
+    </Frame>
+  );
+}
+
+function SessionClock() {
+  return (
+    <Frame>
+      <rect x={40} y={80} width={140} height={70} fill="var(--panel-raised)" stroke={T.line} rx="3" />
+      <Label x={110} y={70} anchor="middle" size="s" fill="var(--cyan)">ASIA</Label>
+      <polyline points="50,115 75,108 100,120 125,110 150,118 170,112" fill="none" stroke="var(--cyan)" strokeWidth="2" />
+      <Label x={110} y={168} anchor="middle" size="s">quiet range</Label>
+      <rect x={200} y={60} width={150} height={110} fill="var(--panel-raised)" stroke={T.line} rx="3" />
+      <Label x={275} y={50} anchor="middle" size="s" fill="var(--amber)">LONDON</Label>
+      <polyline points="210,120 235,140 255,75 285,100 315,80 340,95" fill="none" stroke="var(--amber)" strokeWidth="2" />
+      <Label x={275} y={188} anchor="middle" size="s">volume arrives — sweeps &amp; breaks</Label>
+      <rect x={370} y={45} width={150} height={140} fill="var(--panel-raised)" stroke="var(--green)" rx="3" />
+      <Label x={445} y={36} anchor="middle" size="s" fill="var(--green)">NEW YORK</Label>
+      <polyline points="380,150 405,90 430,120 460,60 490,85 510,55" fill="none" stroke="var(--green)" strokeWidth="2" />
+      <Label x={445} y={202} anchor="middle" size="s" fill="var(--green)">biggest moves — overlap window</Label>
+      <Label x={280} y={230} anchor="middle" size="s" fill={T.mut}>Volatility follows the session clock — WHEN you trade is a filter</Label>
+    </Frame>
+  );
+}
+
+function ConfluenceStack() {
+  return (
+    <Frame>
+      <rect x={60} y={140} width={440} height={26} fill="var(--green-soft)" stroke="var(--green)" strokeDasharray="5 4" rx="2" />
+      <polyline points="60,50 150,85 230,65 330,145 365,178 400,138 470,80 520,55"
+        fill="none" stroke={T.txt} strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx={365} cy={178} r="6" fill="none" stroke="var(--amber)" strokeWidth="2" />
+      <Label x={70} y={40} size="s" fill="var(--green)">✓ uptrend context</Label>
+      <Label x={220} y={40} size="s" fill="var(--green)">✓ fresh demand zone</Label>
+      <Label x={380} y={40} size="s" fill="var(--green)">✓ sweep + reclaim trigger</Label>
+      <Label x={68} y={158} size="s" fill="var(--green)">zone</Label>
+      <Label x={300} y={205} size="s" fill="var(--amber)">all three agree HERE — that's a trade</Label>
+      <Label x={280} y={232} anchor="middle" size="s" fill={T.mut}>Independent evidence stacking at one place. No stack, no trade.</Label>
+    </Frame>
+  );
+}
+
+function NewsSpike() {
+  return (
+    <Frame>
+      <polyline points="40,120 90,115 140,122 190,116 230,120" fill="none" stroke={T.txt} strokeWidth="2" />
+      <Dash x1={250} y1={30} x2={250} y2={210} stroke="var(--amber)" />
+      <Label x={250} y={24} anchor="middle" size="s" fill="var(--amber)">RELEASE</Label>
+      <polyline points="250,120 262,55 274,170 288,75 305,150 330,100 380,110 450,95 520,102"
+        fill="none" stroke="var(--red)" strokeWidth="2" strokeLinejoin="round" />
+      <rect x={250} y={60} width={80} height={120} fill="var(--red-soft)" rx="2" />
+      <Label x={260} y={198} size="s" fill="var(--red)">machine-speed whipsaw, blown-out spreads</Label>
+      <Label x={356} y={70} size="s" fill="var(--green)">trade the structure AFTER</Label>
+      <Label x={356} y={84} size="s" fill="var(--green)">the dust settles</Label>
+      <Label x={280} y={228} anchor="middle" size="s" fill={T.mut}>Know the calendar: the storm window is scheduled in advance</Label>
+    </Frame>
+  );
+}
+
+function PlanLoop() {
+  return (
+    <Frame>
+      <rect x={60} y={90} width={120} height={54} fill="var(--green-soft)" stroke="var(--green)" rx="4" />
+      <Label x={120} y={112} anchor="middle" fill="var(--green)">PLAN</Label>
+      <Label x={120} y={128} anchor="middle" size="s">written rules</Label>
+      <rect x={220} y={90} width={120} height={54} fill="var(--amber-soft)" stroke="var(--amber)" rx="4" />
+      <Label x={280} y={112} anchor="middle" fill="var(--amber)">EXECUTE</Label>
+      <Label x={280} y={128} anchor="middle" size="s">journal every trade</Label>
+      <rect x={380} y={90} width={120} height={54} fill="var(--violet-soft)" stroke="var(--violet)" rx="4" />
+      <Label x={440} y={112} anchor="middle" fill="var(--violet)">REVIEW</Label>
+      <Label x={440} y={128} anchor="middle" size="s">evidence, scheduled</Label>
+      <path d="M 182 117 L 216 117 M 210 111 L 216 117 L 210 123" stroke={T.mut} strokeWidth="1.5" fill="none" />
+      <path d="M 342 117 L 376 117 M 370 111 L 376 117 L 370 123" stroke={T.mut} strokeWidth="1.5" fill="none" />
+      <path d="M 440 148 C 440 195, 120 195, 120 148 M 114 156 L 120 148 L 127 155" stroke={T.mut} strokeWidth="1.5" fill="none" />
+      <Label x={280} y={205} anchor="middle" size="s" fill={T.mut}>rules evolve only here — one change at a time, by data</Label>
+      <Label x={280} y={232} anchor="middle" size="s" fill={T.mut}>The closed improvement loop IS the skill of trading</Label>
+    </Frame>
+  );
+}
+
+function TiltSpiral() {
+  return (
+    <Frame>
+      <polyline points="40,80 90,95 130,85 170,100 210,92" fill="none" stroke={T.txt} strokeWidth="2" />
+      <Label x={60} y={64} size="s">normal variance — planned -1R losses</Label>
+      <polyline points="210,92 250,110 280,105 320,145 350,138 400,190 440,185 500,225"
+        fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx={250} cy={110} r="4" fill="var(--red)" />
+      <Label x={258} y={106} size="s" fill="var(--red)">stop-out → re-enter angry</Label>
+      <circle cx={320} cy={145} r="4" fill="var(--red)" />
+      <Label x={328} y={141} size="s" fill="var(--red)">double size "to get it back"</Label>
+      <circle cx={400} cy={190} r="4" fill="var(--red)" />
+      <Label x={408} y={186} size="s" fill="var(--red)">rules abandoned</Label>
+      <Label x={280} y={232} anchor="middle" size="s" fill="var(--amber)">The tilt cascade — what daily loss limits and cooldowns exist to interrupt</Label>
+    </Frame>
+  );
+}
+
 const DIAGRAMS = {
   "candle-anatomy": CandleAnatomy,
   "bid-ask": BidAsk,
@@ -297,6 +494,17 @@ const DIAGRAMS = {
   "range-vs-trend": RangeVsTrend,
   "ma-pullback": MaPullback,
   "rsi-divergence": RsiDivergence,
+  "wick-rejection": WickRejection,
+  "doji": Doji,
+  "downtrend-structure": DowntrendStructure,
+  "volume-conviction": VolumeConviction,
+  "gap-risk": GapRisk,
+  "expectancy-bars": ExpectancyBars,
+  "session-clock": SessionClock,
+  "confluence-stack": ConfluenceStack,
+  "news-spike": NewsSpike,
+  "plan-loop": PlanLoop,
+  "tilt-spiral": TiltSpiral,
 };
 
 export default function Diagram({ id }) {

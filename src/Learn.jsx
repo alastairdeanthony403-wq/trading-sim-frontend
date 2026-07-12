@@ -267,6 +267,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
         {step.type === "question" && (
           <>
             <p className="lesson-question">{step.prompt}</p>
+            {step.image && <Diagram id={step.image} />}
             <div className="lesson-options">
               {step.options.map((opt, idx) => {
                 let cls = "lesson-option";
@@ -395,6 +396,7 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
         <div className="check-badge">KNOWLEDGE CHECK</div>
         <h2>{check.title}</h2>
         <p className="lesson-question">{q.prompt}</p>
+        {q.image && <Diagram id={q.image} />}
         <div className="lesson-options">
           {q.options.map((opt, idx) => {
             let cls = "lesson-option";

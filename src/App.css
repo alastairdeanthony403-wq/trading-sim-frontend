@@ -585,6 +585,22 @@ body {
   color: var(--text-mute, var(--muted));
 }
 
+.discipline-breakdown {
+  margin: 18px 0;
+  max-width: 560px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.violation-list {
+  margin: 8px 0;
+  padding-left: 18px;
+  line-height: 1.6;
+  color: var(--amber, var(--warn, #e0a10a));
+  font-size: 13px;
+}
+
 .long-btn, .short-btn, .close-btn {
   border: none;
   padding: 12px 26px;

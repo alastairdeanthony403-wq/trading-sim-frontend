@@ -6,6 +6,7 @@ import {
   getBars,
   openTrade,
   closeTrade,
+  advanceSession,
   endSession,
   getLeaderboard,
   getProgress,
@@ -29,8 +30,11 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(1);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(SPEEDS[0]);
-  const [openTradeState, setOpenTradeState] = useState(null); // {trade_id, direction, size, entry_price}
+  const [openTradeState, setOpenTradeState] = useState(null); // {trade_id, direction, size, entry_price, stop_loss, take_profit}
   const [tradeSize, setTradeSize] = useState(10);
+  const [stopLossInput, setStopLossInput] = useState("");
+  const [takeProfitInput, setTakeProfitInput] = useState("");
+  const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [balance, setBalance] = useState(10000);
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -39,6 +43,12 @@ export default function App() {
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
   const containerRef = useRef(null);
+  const priceLinesRef = useRef([]);              // active SL/TP chart lines
+  const advanceInFlightRef = useRef(false);      // single in-flight /advance
+  const advanceTargetRef = useRef(0);            // latest bar to advance to
+  const openTradeRef = useRef(null);             // current open trade for async handlers
+  openTradeRef.current = openTradeState;
+  const countedRef = useRef(new Set());          // trade ids already added to balance (idempotent)
 
   useEffect(() => {
     listScenarios().then(setScenarios);
@@ -129,6 +139,63 @@ export default function App() {
     return () => clearTimeout(id);
   }, [playing, visibleCount, allBars, speed]);
 
+  // ---- server-authoritative order processing ----
+  // As playback advances, ask the server to process SL/TP against the bars
+  // that have elapsed. Coalesced to a single in-flight request (Max speed can
+  // tick every 40ms) — we always re-issue with the latest bar when it lands.
+  const runAdvance = useCallback(async () => {
+    if (advanceInFlightRef.current || !session) return;
+    const target = advanceTargetRef.current;
+    advanceInFlightRef.current = true;
+    try {
+      const res = await advanceSession(session.session_id, target);
+      for (const ev of res.events || []) {
+        if (ev.event === "closed" && !countedRef.current.has(ev.trade_id)) {
+          countedRef.current.add(ev.trade_id);
+          setBalance((b) => b + ev.pnl);
+          setLastFill({ reason: ev.reason, bar: ev.bar_sequence, pnl: ev.pnl });
+          if (openTradeRef.current && ev.trade_id === openTradeRef.current.trade_id) {
+            setOpenTradeState(null);
+          }
+        }
+      }
+    } catch {
+      /* transient — next tick retries */
+    } finally {
+      advanceInFlightRef.current = false;
+      if (advanceTargetRef.current > target) runAdvance();  // catch up
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+    const seq = allBars[visibleCount - 1]?.bar_sequence;
+    if (seq == null) return;
+    advanceTargetRef.current = seq;
+    if (openTradeRef.current) runAdvance();   // only when a position is live
+  }, [visibleCount, allBars, session, runAdvance]);
+
+  // ---- draw SL/TP price lines for the open trade ----
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    for (const line of priceLinesRef.current) {
+      try { series.removePriceLine(line); } catch { /* chart torn down */ }
+    }
+    priceLinesRef.current = [];
+    const ot = openTradeState;
+    if (!ot) return;
+    const add = (price, color, title) => {
+      if (price == null) return;
+      priceLinesRef.current.push(series.createPriceLine({
+        price, color, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title,
+      }));
+    };
+    add(ot.entry_price, "#9aa5b1", "entry");
+    add(ot.stop_loss, "#d9534f", "SL");
+    add(ot.take_profit, "#3fb68b", "TP");
+  }, [openTradeState, screen]);
+
   const handleSelectScenario = useCallback(async (scenarioId) => {
     setLoading(true);
     const s = await startSession(scenarioId, getUserId());
@@ -137,7 +204,11 @@ export default function App() {
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
     setBalance(s.starting_balance);
+    countedRef.current = new Set();
     setOpenTradeState(null);
+    setStopLossInput("");
+    setTakeProfitInput("");
+    setLastFill(null);
     setResults(null);
     setScreen("playing");
     setLoading(false);
@@ -147,19 +218,32 @@ export default function App() {
 
   const handleOpenTrade = async (direction) => {
     if (!currentBar || openTradeState) return;
+    const sl = stopLossInput !== "" ? Number(stopLossInput) : undefined;
+    const tp = takeProfitInput !== "" ? Number(takeProfitInput) : undefined;
+    setLastFill(null);
     const res = await openTrade(session.session_id, {
       direction,
       size: tradeSize,
       barSequence: currentBar.bar_sequence,
+      stopLoss: sl,
+      takeProfit: tp,
     });
-    setOpenTradeState({ ...res, direction, size: tradeSize });
+    setOpenTradeState({
+      ...res, direction, size: tradeSize, stop_loss: sl ?? null, take_profit: tp ?? null,
+    });
+    setStopLossInput("");
+    setTakeProfitInput("");
   };
 
   const handleCloseTrade = async () => {
     if (!currentBar || !openTradeState) return;
-    const res = await closeTrade(openTradeState.trade_id, currentBar.bar_sequence);
-    setBalance((b) => b + res.pnl);
-    setOpenTradeState(null);
+    const t = openTradeState;
+    setOpenTradeState(null);              // optimistic: block a double close
+    const res = await closeTrade(t.trade_id, currentBar.bar_sequence);
+    if (res && typeof res.pnl === "number" && !countedRef.current.has(t.trade_id)) {
+      countedRef.current.add(t.trade_id);
+      setBalance((b) => b + res.pnl);
+    }
   };
 
   const handleEndSession = async () => {
@@ -407,15 +491,30 @@ export default function App() {
         </div>
 
         <div className="control-row">
-          <input
-            type="number"
-            className="size-input"
-            value={tradeSize}
-            onChange={(e) => setTradeSize(Number(e.target.value))}
-            min="1"
-          />
+          <label className="field-label">Size
+            <input
+              type="number" className="size-input" value={tradeSize}
+              onChange={(e) => setTradeSize(Number(e.target.value))} min="1"
+            />
+          </label>
           {!openTradeState ? (
             <>
+              <label className="field-label">Stop-loss
+                <input
+                  type="number" className="size-input" value={stopLossInput}
+                  placeholder={currentBar ? currentBar.close.toFixed(2) : "price"}
+                  onChange={(e) => setStopLossInput(e.target.value)}
+                  step="any"
+                />
+              </label>
+              <label className="field-label">Take-profit
+                <input
+                  type="number" className="size-input" value={takeProfitInput}
+                  placeholder={currentBar ? currentBar.close.toFixed(2) : "price"}
+                  onChange={(e) => setTakeProfitInput(e.target.value)}
+                  step="any"
+                />
+              </label>
               <button className="long-btn" onClick={() => handleOpenTrade("long")}>
                 LONG
               </button>
@@ -424,14 +523,31 @@ export default function App() {
               </button>
             </>
           ) : (
-            <button className="close-btn" onClick={handleCloseTrade}>
-              CLOSE {openTradeState.direction.toUpperCase()}
-            </button>
+            <>
+              <div className="order-readout">
+                {openTradeState.direction.toUpperCase()} {openTradeState.size}
+                {openTradeState.stop_loss != null && <> · SL {openTradeState.stop_loss}</>}
+                {openTradeState.take_profit != null && <> · TP {openTradeState.take_profit}</>}
+              </div>
+              <button className="close-btn" onClick={handleCloseTrade}>
+                CLOSE {openTradeState.direction.toUpperCase()}
+              </button>
+            </>
           )}
           <button className="end-btn" onClick={handleEndSession}>
             End session
           </button>
         </div>
+
+        {lastFill && (
+          <div className="control-row">
+            <div className={`fill-note ${lastFill.pnl >= 0 ? "pnl-pos" : "pnl-neg"}`}>
+              Auto-closed at bar {lastFill.bar} ·{" "}
+              {lastFill.reason.replace("_", " ")} ·{" "}
+              {lastFill.pnl >= 0 ? "+" : ""}{lastFill.pnl.toFixed(2)}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

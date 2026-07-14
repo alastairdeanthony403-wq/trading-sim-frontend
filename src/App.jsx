@@ -12,8 +12,13 @@ import {
   getLeaderboard,
   getProgress,
   getTools,
+  getMissions,
+  getDailyMission,
+  getMissionStatus,
+  submitMission,
 } from "./api";
 import { getUserId } from "./user";
+import { addXp } from "./xp";
 import Learn from "./Learn";
 import "./App.css";
 
@@ -44,6 +49,12 @@ export default function App() {
   const [marginCall, setMarginCall] = useState(false);
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
+  const [missions, setMissions] = useState([]);
+  const [daily, setDaily] = useState(null);          // { mission, date, streak }
+  const [activeMission, setActiveMission] = useState(null);
+  const [activeIsDaily, setActiveIsDaily] = useState(false);
+  const [missionStatus, setMissionStatus] = useState(null);  // live { results, passed }
+  const [missionResult, setMissionResult] = useState(null);  // submit result
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -58,6 +69,21 @@ export default function App() {
   const positionsRef = useRef([]);               // positions for async handlers
   positionsRef.current = positions;
   const endedRef = useRef(false);                // guard: end the session once
+  const activeMissionRef = useRef(null);
+  activeMissionRef.current = activeMission;
+  const activeIsDailyRef = useRef(false);
+  activeIsDailyRef.current = activeIsDaily;
+
+  // Submit the active mission (if any) for a finished session; awards XP on pass.
+  const submitActiveMission = async (sessionId) => {
+    const m = activeMissionRef.current;
+    if (!m) return;
+    try {
+      const r = await submitMission(m.id, sessionId, getUserId(), activeIsDailyRef.current);
+      if (r.passed && r.xp_awarded) addXp(r.xp_awarded);
+      setMissionResult(r);
+    } catch { /* leave missionResult null */ }
+  };
 
   const startingBalance = session?.starting_balance ?? 10000;
   // Balance (realised) is derived from the authoritative positions list — no
@@ -161,7 +187,19 @@ export default function App() {
     if (!session) return;
     const p = await getPositions(session.session_id);
     setPositions(Array.isArray(p) ? p : []);
+    if (activeMissionRef.current) {
+      getMissionStatus(session.session_id, activeMissionRef.current.id)
+        .then(setMissionStatus).catch(() => {});
+    }
   }, [session]);
+
+  // initial mission rule evaluation when a mission session opens
+  useEffect(() => {
+    if (session && activeMission) {
+      getMissionStatus(session.session_id, activeMission.id)
+        .then(setMissionStatus).catch(() => {});
+    }
+  }, [session, activeMission]);
 
   // As playback advances, ask the server to process working orders against the
   // bars that have elapsed. Coalesced to a single in-flight request (Max speed
@@ -174,6 +212,10 @@ export default function App() {
       const res = await advanceSession(session.session_id, target);
       if (Array.isArray(res.positions)) setPositions(res.positions);
       setMarginCall(!!res.margin_call);
+      if (activeMissionRef.current) {
+        getMissionStatus(session.session_id, activeMissionRef.current.id)
+          .then(setMissionStatus).catch(() => {});
+      }
       const closed = (res.events || []).filter((e) => e.event === "closed" || e.event === "liquidated");
       if (closed.length) {
         const last = closed[closed.length - 1];
@@ -185,6 +227,7 @@ export default function App() {
         setMarginCall(false);
         const r = await endSession(session.session_id);
         setResults(r);
+        await submitActiveMission(session.session_id);
         const board = await getLeaderboard(session.scenario_id);
         setLeaderboard(board);
         setScreen("results");
@@ -237,7 +280,7 @@ export default function App() {
     }
   }, [positions, screen]);
 
-  const handleSelectScenario = useCallback(async (scenarioId) => {
+  const handleSelectScenario = useCallback(async (scenarioId, keepMission = false) => {
     setLoading(true);
     const s = await startSession(scenarioId, getUserId());
     const bars = await getBars(s.session_id);
@@ -262,9 +305,24 @@ export default function App() {
     endedRef.current = false;
     setLastFill(null);
     setResults(null);
+    if (!keepMission) {
+      setActiveMission(null);
+      setActiveIsDaily(false);
+    }
+    setMissionStatus(null);
+    setMissionResult(null);
     setScreen("playing");
     setLoading(false);
   }, []);
+
+  const handleStartMission = useCallback(async (mission, isDaily) => {
+    // pick the mission's scenario if set, else the first available scenario
+    const scenarioId = mission.scenario_id || (scenarios[0] && scenarios[0].id);
+    if (!scenarioId) return;
+    setActiveMission(mission);
+    setActiveIsDaily(!!isDaily);
+    await handleSelectScenario(scenarioId, true);
+  }, [scenarios, handleSelectScenario]);
 
   const currentBar = allBars[visibleCount - 1];
 
@@ -314,6 +372,7 @@ export default function App() {
     }
     const res = await endSession(session.session_id);
     setResults(res);
+    await submitActiveMission(session.session_id);
     const board = await getLeaderboard(session.scenario_id);
     setLeaderboard(board);
     setScreen("results");
@@ -351,6 +410,14 @@ export default function App() {
           <div className="menu-buttons">
             <button className="menu-btn menu-btn-primary" onClick={() => setScreen("select")}>
               Play a scenario
+            </button>
+            <button className="menu-btn" onClick={async () => {
+              const [ms, d] = await Promise.all([getMissions(), getDailyMission(getUserId())]);
+              setMissions(ms || []);
+              setDaily(d || null);
+              setScreen("missions");
+            }}>
+              Missions &amp; daily challenge
             </button>
             <button className="menu-btn" onClick={async () => {
               const p = await getProgress(getUserId());
@@ -452,6 +519,52 @@ export default function App() {
     );
   }
 
+
+  if (screen === "missions") {
+    const rulesText = (m) => (m.rules || []).map((r) => r.label).join(" · ");
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+        </header>
+        <main className="howto">
+          <h2>Missions</h2>
+          <p className="muted" style={{ marginBottom: 16 }}>
+            Missions score you on process — risk control and discipline — not just profit.
+          </p>
+          {daily && daily.mission && (
+            <div className="daily-card">
+              <div className="daily-tag">
+                DAILY CHALLENGE · {daily.date} · streak {daily.streak} 🔥
+              </div>
+              <h3 style={{ margin: "6px 0" }}>{daily.mission.title}</h3>
+              <p className="muted">{daily.mission.brief}</p>
+              <div className="mission-rules">{rulesText(daily.mission)}</div>
+              <button className="primary-btn" style={{ marginTop: 10 }}
+                onClick={() => handleStartMission(daily.mission, true)} disabled={loading}>
+                Play daily · +{daily.mission.xp_reward} XP
+              </button>
+            </div>
+          )}
+          <h3 className="section-label" style={{ marginTop: 24 }}>All missions</h3>
+          <div className="mission-grid">
+            {missions.map((m) => (
+              <div key={m.id} className="mission-card">
+                <div className="mission-tier">TIER {m.difficulty_tier} · +{m.xp_reward} XP</div>
+                <div className="mission-title">{m.title}</div>
+                <div className="muted mission-brief">{m.brief}</div>
+                <div className="mission-rules">{rulesText(m)}</div>
+                <button className="menu-btn" onClick={() => handleStartMission(m, false)} disabled={loading}>
+                  Play
+                </button>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (screen === "select") {
     return (
@@ -557,6 +670,21 @@ export default function App() {
         </header>
         <main className="results">
           <h2>Session complete</h2>
+          {missionResult && (
+            <div className={`mission-result ${missionResult.passed ? "passed" : "failed"}`}>
+              <div className="mission-result-head">
+                {missionResult.passed ? "MISSION COMPLETE" : "MISSION FAILED"}
+                {missionResult.passed && missionResult.xp_awarded ? ` · +${missionResult.xp_awarded} XP` : ""}
+              </div>
+              <div className="rules-hud-items">
+                {(missionResult.results || []).map((r, i) => (
+                  <span key={i} className={`rule-chip ${r.passed ? "rule-ok" : "rule-bad"}`}>
+                    {r.passed ? "✓" : "✕"} {r.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="results-grid">
             <Stat label="Ending balance" value={`$${results.ending_balance.toFixed(2)}`} />
             <Stat label="Return" value={`${results.total_return_pct.toFixed(2)}%`} accent={results.total_return_pct >= 0} />
@@ -639,6 +767,23 @@ export default function App() {
         <div className="margin-call-banner">
           ⚠ MARGIN CALL — equity is close to the maintenance level. Reduce risk or
           you'll be liquidated.
+        </div>
+      )}
+
+      {activeMission && (
+        <div className="rules-hud">
+          <div className="rules-hud-title">
+            MISSION · {activeMission.title}{activeIsDaily ? " · DAILY" : ""}
+          </div>
+          <div className="rules-hud-items">
+            {(missionStatus?.results ||
+              (activeMission.rules || []).map((r) => ({ label: r.label, passed: false }))
+            ).map((r, i) => (
+              <span key={i} className={`rule-chip ${r.passed ? "rule-ok" : "rule-pending"}`}>
+                {r.passed ? "✓" : "○"} {r.label}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

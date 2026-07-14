@@ -577,6 +577,14 @@ body {
   padding: 6px 0;
 }
 
+.tool-level-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute, var(--muted));
+}
+
 .long-btn, .short-btn, .close-btn {
   border: none;
   padding: 12px 26px;

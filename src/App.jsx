@@ -11,6 +11,7 @@ import {
   endSession,
   getLeaderboard,
   getProgress,
+  getCareer,
   getTools,
   getMissions,
   getDailyMission,
@@ -60,6 +61,7 @@ export default function App() {
   const [missionResult, setMissionResult] = useState(null);  // submit result
   const [replayData, setReplayData] = useState(null);
   const [llmCoach, setLlmCoach] = useState(null);   // { loading, text }
+  const [career, setCareer] = useState(null);
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -452,6 +454,12 @@ export default function App() {
             }}>
               Learn to trade
             </button>
+            <button className="menu-btn" onClick={async () => {
+              setCareer(await getCareer(getUserId()));
+              setScreen("career");
+            }}>
+              Career
+            </button>
             <button className="menu-btn" onClick={openProgress}>
               Your progress
             </button>
@@ -498,6 +506,71 @@ export default function App() {
           <button className="menu-btn" onClick={() => setScreen("menu")}>
             Back to menu
           </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "career" && career) {
+    const fmtReq = (r) => {
+      const cur = typeof r.current === "number" && r.current < 1 && r.key.startsWith("pct")
+        ? `${Math.round(r.current * 100)}%` : r.current;
+      const tgt = r.key.startsWith("pct") ? `${Math.round(r.target * 100)}%` : r.target;
+      return `${cur} / ${tgt}`;
+    };
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+        </header>
+        <main className="howto">
+          <div className="section-title">Career</div>
+          <h2 style={{ margin: "4px 0 6px" }}>{career.name}</h2>
+          <div className="mono muted" style={{ marginBottom: 18 }}>
+            Level {career.level} of 7 · advancement is earned by skill and discipline, never profit
+          </div>
+
+          {career.next ? (
+            <div className="career-next">
+              <div className="section-label">To reach {career.next.name}</div>
+              <ul className="req-list">
+                {career.next.requirements.map((r, i) => (
+                  <li key={i} className={r.met ? "req-met" : "req-unmet"}>
+                    <span className="req-mark">{r.met ? "✓" : "○"}</span>
+                    <span className="req-label">{r.label}</span>
+                    <span className="req-val">{fmtReq(r)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+                Unlocks: {[...(career.next.unlocks.tools || []), ...(career.next.unlocks.markets || [])].join(", ") || "—"}
+              </div>
+            </div>
+          ) : (
+            <div className="career-next">You've reached the top career level. 🏆</div>
+          )}
+
+          <h3 className="section-label" style={{ marginTop: 22 }}>Markets unlocked</h3>
+          <div className="market-chips">
+            {["stocks", "crypto", "forex", "indices", "commodities"].map((m) => (
+              <span key={m} className={`market-chip ${career.unlocked_markets.includes(m) ? "on" : "off"}`}>
+                {career.unlocked_markets.includes(m) ? "✓" : "🔒"} {m}
+              </span>
+            ))}
+          </div>
+
+          <h3 className="section-label" style={{ marginTop: 22 }}>The path</h3>
+          <ol className="career-ladder">
+            {career.all_levels.map((l) => (
+              <li key={l.level} className={l.level === career.level ? "current" : l.level < career.level ? "done" : ""}>
+                <span className="ladder-name">{l.name}</span>
+                <span className="muted ladder-unlocks">
+                  {[...(l.unlocks.tools || []), ...(l.unlocks.markets || [])].slice(-3).join(", ")}
+                </span>
+              </li>
+            ))}
+          </ol>
         </main>
       </div>
     );

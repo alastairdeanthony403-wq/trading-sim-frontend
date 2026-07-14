@@ -708,6 +708,15 @@ body {
   padding: 6px 14px 6px 0;
 }
 .replay-table td { white-space: nowrap; }
+.llm-coach { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.llm-coach-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  border-left: 2px solid var(--accent-2, var(--green));
+  padding-left: 12px;
+}
 
 .long-btn, .short-btn, .close-btn {
   border: none;

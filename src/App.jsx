@@ -17,6 +17,7 @@ import {
   getMissionStatus,
   submitMission,
   getReplay,
+  getCoachLlm,
 } from "./api";
 import { getUserId } from "./user";
 import { addXp } from "./xp";
@@ -58,6 +59,7 @@ export default function App() {
   const [missionStatus, setMissionStatus] = useState(null);  // live { results, passed }
   const [missionResult, setMissionResult] = useState(null);  // submit result
   const [replayData, setReplayData] = useState(null);
+  const [llmCoach, setLlmCoach] = useState(null);   // { loading, text }
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -386,8 +388,20 @@ export default function App() {
     try {
       const r = await getReplay(session.session_id);
       setReplayData(r);
+      setLlmCoach(null);
       setScreen("replay");
     } catch { /* ignore */ }
+  };
+
+  const getLlmTake = async () => {
+    if (!session) return;
+    setLlmCoach({ loading: true, text: "" });
+    try {
+      const r = await getCoachLlm(session.session_id);
+      setLlmCoach({ loading: false, text: r.review || "The coach had nothing to add this time." });
+    } catch {
+      setLlmCoach({ loading: false, text: "Couldn't reach the AI coach — the rule-based notes above still apply." });
+    }
   };
 
   const positionUnrealised = (p) => {
@@ -559,6 +573,18 @@ export default function App() {
                   </button>
                 </div>
               ))}
+
+              {replayData.llm_coach_enabled && (
+                <div className="llm-coach">
+                  {!llmCoach ? (
+                    <button className="menu-btn" onClick={getLlmTake}>Get the AI coach's take</button>
+                  ) : llmCoach.loading ? (
+                    <div className="muted">The coach is reviewing your session…</div>
+                  ) : (
+                    <div className="llm-coach-text">{llmCoach.text}</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

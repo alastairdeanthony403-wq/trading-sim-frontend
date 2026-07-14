@@ -85,6 +85,11 @@ export async function endSession(sessionId) {
   return res.json();
 }
 
+export async function getReplay(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/replay`);
+  return res.json();
+}
+
 export async function getLeaderboard(scenarioId) {
   const res = await fetch(`${API_BASE}/scenarios/${scenarioId}/leaderboard`);
   return res.json();

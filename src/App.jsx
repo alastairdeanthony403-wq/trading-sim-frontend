@@ -563,8 +563,32 @@ export default function App() {
             <Stat label="Sharpe" value={results.sharpe_ratio.toFixed(2)} />
             <Stat label="Max drawdown" value={`${results.max_drawdown_pct.toFixed(2)}%`} />
             <Stat label="Win rate" value={`${results.win_rate.toFixed(1)}%`} />
+            {results.discipline && (
+              <Stat label="Discipline" value={`${results.discipline.discipline_score.toFixed(0)} / 100`}
+                accent={results.discipline.discipline_score >= 70} />
+            )}
             <Stat label="Composite score" value={results.score_composite.toFixed(1)} highlight />
           </div>
+
+          {results.discipline && results.discipline.rule_violations > 0 && (
+            <div className="discipline-breakdown">
+              <div className="section-label">Discipline flags</div>
+              <ul className="violation-list">
+                {results.discipline.no_stop_count > 0 && (
+                  <li>{results.discipline.no_stop_count} trade{results.discipline.no_stop_count > 1 ? "s" : ""} with no stop-loss — you had no defined risk.</li>
+                )}
+                {results.discipline.oversize_count > 0 && (
+                  <li>{results.discipline.oversize_count} oversized trade{results.discipline.oversize_count > 1 ? "s" : ""} — risking more than 5% of your balance.</li>
+                )}
+                {results.discipline.revenge_count > 0 && (
+                  <li>{results.discipline.revenge_count} revenge trade{results.discipline.revenge_count > 1 ? "s" : ""} — bigger size right after a stop-out.</li>
+                )}
+              </ul>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Avg risk per trade: {results.discipline.avg_risk_pct.toFixed(2)}% of balance.
+              </div>
+            </div>
+          )}
 
           {leaderboard.length > 0 && (
             <div className="leaderboard">

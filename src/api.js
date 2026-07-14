@@ -22,7 +22,10 @@ export async function getBars(sessionId, upTo) {
   return res.json();
 }
 
-export async function openTrade(sessionId, { direction, size, barSequence, stopLoss, takeProfit }) {
+export async function openTrade(sessionId, {
+  direction, size, barSequence, stopLoss, takeProfit,
+  orderType = "market", entryOrderPrice, trailDistance,
+}) {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/trades`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -32,7 +35,35 @@ export async function openTrade(sessionId, { direction, size, barSequence, stopL
       bar_sequence: barSequence,
       stop_loss: stopLoss,
       take_profit: takeProfit,
+      order_type: orderType,
+      entry_order_price: entryOrderPrice,
+      trail_distance: trailDistance,
     }),
+  });
+  return res.json();
+}
+
+// Process resting/working orders up to the current playback bar. Returns
+// { events, positions } — server-authoritative, idempotent.
+export async function advanceSession(sessionId, barSequence) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/advance`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bar_sequence: barSequence }),
+  });
+  return res.json();
+}
+
+export async function getPositions(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/positions`);
+  return res.json();
+}
+
+export async function modifyTrade(tradeId, changes) {
+  const res = await fetch(`${API_BASE}/trades/${tradeId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
   });
   return res.json();
 }

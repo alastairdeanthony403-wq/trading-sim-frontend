@@ -90,6 +90,11 @@ export async function getReplay(sessionId) {
   return res.json();
 }
 
+export async function getCoachLlm(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/coach-llm`);
+  return res.json();
+}
+
 export async function getLeaderboard(scenarioId) {
   const res = await fetch(`${API_BASE}/scenarios/${scenarioId}/leaderboard`);
   return res.json();

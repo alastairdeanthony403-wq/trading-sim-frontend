@@ -101,6 +101,30 @@ export async function getTools(userId) {
   return res.json();
 }
 
+export async function getMissions() {
+  const res = await fetch(`${API_BASE}/missions`);
+  return res.json();
+}
+
+export async function getDailyMission(userId) {
+  const res = await fetch(`${API_BASE}/missions/daily?user_id=${encodeURIComponent(userId)}`);
+  return res.json();
+}
+
+export async function getMissionStatus(sessionId, missionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/mission/${missionId}/status`);
+  return res.json();
+}
+
+export async function submitMission(missionId, sessionId, userId, isDaily = false) {
+  const res = await fetch(`${API_BASE}/missions/${missionId}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, user_id: userId, is_daily: isDaily }),
+  });
+  return res.json();
+}
+
 export async function markComplete(userId, itemId) {
   const res = await fetch(`${API_BASE}/progress/${userId}/complete`, {
     method: "POST",

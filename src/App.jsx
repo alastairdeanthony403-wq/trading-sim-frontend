@@ -16,10 +16,12 @@ import {
   getDailyMission,
   getMissionStatus,
   submitMission,
+  getReplay,
 } from "./api";
 import { getUserId } from "./user";
 import { addXp } from "./xp";
 import Learn from "./Learn";
+import ReplayChart from "./ReplayChart";
 import "./App.css";
 
 const SPEEDS = [
@@ -55,6 +57,7 @@ export default function App() {
   const [activeIsDaily, setActiveIsDaily] = useState(false);
   const [missionStatus, setMissionStatus] = useState(null);  // live { results, passed }
   const [missionResult, setMissionResult] = useState(null);  // submit result
+  const [replayData, setReplayData] = useState(null);
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -378,6 +381,15 @@ export default function App() {
     setScreen("results");
   };
 
+  const openReplay = async () => {
+    if (!session) return;
+    try {
+      const r = await getReplay(session.session_id);
+      setReplayData(r);
+      setScreen("replay");
+    } catch { /* ignore */ }
+  };
+
   const positionUnrealised = (p) => {
     if (p.status !== "open" || !currentBar) return 0;
     const diff = currentBar.close - p.entry_price;
@@ -520,6 +532,79 @@ export default function App() {
   }
 
 
+  if (screen === "replay" && replayData) {
+    const sev = { good: "rule-ok", warn: "rule-bad", info: "rule-pending" };
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("results")}>← Results</button>
+        </header>
+        <main className="results" style={{ maxWidth: 1100 }}>
+          <h2>Session review</h2>
+
+          <ReplayChart bars={allBars} markers={replayData.markers} trades={replayData.trades} />
+
+          {replayData.coach && replayData.coach.length > 0 && (
+            <div className="coach-panel">
+              <div className="section-label">Coach</div>
+              {replayData.coach.map((f, i) => (
+                <div key={i} className="coach-finding">
+                  <span className={`rule-chip ${sev[f.severity] || "rule-pending"}`}>
+                    {f.severity.toUpperCase()}
+                  </span>
+                  <span className="coach-text">{f.text}</span>
+                  <button className="link-btn coach-lesson" onClick={() => setScreen("learn")}>
+                    Lesson →
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {replayData.equity_curve && replayData.equity_curve.length > 1 && (
+            <EquitySparkline curve={replayData.equity_curve} start={replayData.starting_balance} />
+          )}
+
+          <div className="pm-section">
+            <h3 className="section-label">Trade by trade</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table className="pm-table replay-table">
+                <thead>
+                  <tr>
+                    <th>Dir</th><th>Size</th><th>Entry</th><th>Exit</th>
+                    <th>Planned R</th><th>Achieved R</th><th>MFE</th><th>MAE</th><th>Reason</th><th>P&amp;L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {replayData.trades.map((t, i) => (
+                    <tr key={i}>
+                      <td className={`pos-${t.direction}`}>{t.direction.toUpperCase()}</td>
+                      <td>{t.size}</td>
+                      <td>{t.entry_price?.toFixed(2)}</td>
+                      <td>{t.exit_price?.toFixed(2)}</td>
+                      <td>{t.planned_r != null ? `${t.planned_r}R` : "—"}</td>
+                      <td className={t.achieved_r >= 0 ? "pnl-pos" : "pnl-neg"}>
+                        {t.achieved_r != null ? `${t.achieved_r}R` : "—"}
+                      </td>
+                      <td>{t.mfe_r != null ? `${t.mfe_r}R` : t.mfe}</td>
+                      <td>{t.mae_r != null ? `${t.mae_r}R` : t.mae}</td>
+                      <td>{(t.exit_reason || "").replace("_", " ")}</td>
+                      <td className={t.pnl >= 0 ? "pnl-pos" : "pnl-neg"}>{t.pnl.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <button className="primary-btn" onClick={() => setScreen("select")}>Run another scenario</button>
+          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>Back to menu</button>
+        </main>
+      </div>
+    );
+  }
+
   if (screen === "missions") {
     const rulesText = (m) => (m.rules || []).map((r) => r.label).join(" · ");
     return (
@@ -654,6 +739,9 @@ export default function App() {
           <button className="primary-btn" onClick={() => setScreen("select")} style={{ marginTop: 20 }}>
             Try again
           </button>
+          <button className="menu-btn" onClick={openReplay} style={{ marginLeft: 12 }}>
+            Review session
+          </button>
           <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
             Back to menu
           </button>
@@ -737,6 +825,9 @@ export default function App() {
 
           <button className="primary-btn" onClick={() => setScreen("select")}>
             Run another scenario
+          </button>
+          <button className="menu-btn" onClick={openReplay} style={{ marginLeft: 12 }}>
+            Review session
           </button>
           <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
             Back to menu

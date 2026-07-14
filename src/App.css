@@ -679,6 +679,36 @@ body {
 .mission-result.passed .mission-result-head { color: var(--green); }
 .mission-result.failed .mission-result-head { color: var(--red); }
 
+/* Replay / coach */
+.coach-panel {
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.coach-finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  line-height: 1.5;
+}
+.coach-finding:first-of-type { border-top: none; }
+.coach-text { flex: 1; font-size: 14px; }
+.coach-lesson { white-space: nowrap; }
+.replay-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 6px 14px 6px 0;
+}
+.replay-table td { white-space: nowrap; }
+
 .long-btn, .short-btn, .close-btn {
   border: none;
   padding: 12px 26px;

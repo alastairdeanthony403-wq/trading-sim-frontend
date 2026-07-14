@@ -11,6 +11,7 @@ import {
   endSession,
   getLeaderboard,
   getProgress,
+  getTools,
 } from "./api";
 import { getUserId } from "./user";
 import Learn from "./Learn";
@@ -41,6 +42,8 @@ export default function App() {
   const [leverage, setLeverage] = useState(1);
   const [orderError, setOrderError] = useState("");
   const [marginCall, setMarginCall] = useState(false);
+  const [unlockedTools, setUnlockedTools] = useState([]);
+  const [toolLevel, setToolLevel] = useState(1);
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -238,6 +241,12 @@ export default function App() {
     setLoading(true);
     const s = await startSession(scenarioId, getUserId());
     const bars = await getBars(s.session_id);
+    try {
+      const t = await getTools(getUserId());
+      setUnlockedTools(t.unlocked_tools || []);
+      setToolLevel(t.tool_level || 1);
+      if (!(t.unlocked_tools || []).includes("leverage")) setLeverage(1);
+    } catch { setUnlockedTools([]); setToolLevel(1); }
     setSession(s);
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
@@ -319,6 +328,11 @@ export default function App() {
   const pendingOrders = positions.filter((p) => p.status === "pending");
   const totalUnrealised = openPositions.reduce((s, p) => s + positionUnrealised(p), 0);
   const equity = balance + totalUnrealised;
+
+  // progressive tool-gating (server-authoritative)
+  const has = (tool) => unlockedTools.includes(tool);
+  const liveOrders = openPositions.length + pendingOrders.length;
+  const canOpenNew = has("multi_position") || liveOrders === 0;
 
   // ---------- SCREENS ----------
 
@@ -626,33 +640,37 @@ export default function App() {
         </div>
 
         <div className="control-row">
-          <label className="field-label">Type
-            <select
-              className="size-input" value={orderType}
-              onChange={(e) => setOrderType(e.target.value)}
-            >
-              <option value="market">Market</option>
-              <option value="limit">Limit</option>
-              <option value="stop">Stop</option>
-            </select>
-          </label>
+          {has("limit_stop") && (
+            <label className="field-label">Type
+              <select
+                className="size-input" value={orderType}
+                onChange={(e) => setOrderType(e.target.value)}
+              >
+                <option value="market">Market</option>
+                <option value="limit">Limit</option>
+                <option value="stop">Stop</option>
+              </select>
+            </label>
+          )}
           <label className="field-label">Size
             <input
               type="number" className="size-input" value={tradeSize}
               onChange={(e) => setTradeSize(Number(e.target.value))} min="1"
             />
           </label>
-          <label className="field-label">Leverage
-            <select
-              className="size-input" value={leverage}
-              onChange={(e) => setLeverage(Number(e.target.value))}
-            >
-              {[1, 2, 5, 10, 25, 50, 100].map((x) => (
-                <option key={x} value={x}>{x}x</option>
-              ))}
-            </select>
-          </label>
-          {orderType !== "market" && (
+          {has("leverage") && (
+            <label className="field-label">Leverage
+              <select
+                className="size-input" value={leverage}
+                onChange={(e) => setLeverage(Number(e.target.value))}
+              >
+                {[1, 2, 5, 10, 25, 50, 100].map((x) => (
+                  <option key={x} value={x}>{x}x</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {has("limit_stop") && orderType !== "market" && (
             <label className="field-label">Entry @
               <input
                 type="number" className="size-input" value={entryPriceInput}
@@ -661,36 +679,50 @@ export default function App() {
               />
             </label>
           )}
-          <label className="field-label">Stop-loss
-            <input
-              type="number" className="size-input" value={stopLossInput}
-              placeholder="none" step="any"
-              onChange={(e) => setStopLossInput(e.target.value)}
-            />
-          </label>
-          <label className="field-label">Take-profit
-            <input
-              type="number" className="size-input" value={takeProfitInput}
-              placeholder="none" step="any"
-              onChange={(e) => setTakeProfitInput(e.target.value)}
-            />
-          </label>
-          <label className="field-label">Trail dist.
-            <input
-              type="number" className="size-input" value={trailInput}
-              placeholder="none" step="any"
-              onChange={(e) => setTrailInput(e.target.value)}
-            />
-          </label>
-          <button className="long-btn" onClick={() => handleOpenTrade("long")}>
+          {has("sl_tp") && (
+            <>
+              <label className="field-label">Stop-loss
+                <input
+                  type="number" className="size-input" value={stopLossInput}
+                  placeholder="none" step="any"
+                  onChange={(e) => setStopLossInput(e.target.value)}
+                />
+              </label>
+              <label className="field-label">Take-profit
+                <input
+                  type="number" className="size-input" value={takeProfitInput}
+                  placeholder="none" step="any"
+                  onChange={(e) => setTakeProfitInput(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+          {has("trailing") && (
+            <label className="field-label">Trail dist.
+              <input
+                type="number" className="size-input" value={trailInput}
+                placeholder="none" step="any"
+                onChange={(e) => setTrailInput(e.target.value)}
+              />
+            </label>
+          )}
+          <button className="long-btn" onClick={() => handleOpenTrade("long")} disabled={!canOpenNew}>
             LONG
           </button>
-          <button className="short-btn" onClick={() => handleOpenTrade("short")}>
+          <button className="short-btn" onClick={() => handleOpenTrade("short")} disabled={!canOpenNew}>
             SHORT
           </button>
           <button className="end-btn" onClick={handleEndSession}>
             End session
           </button>
+        </div>
+
+        <div className="control-row">
+          <div className="tool-level-hint">
+            LEVEL {toolLevel}
+            {!canOpenNew && " · one position at a time"}
+            {toolLevel < 6 && " · more tools unlock as you complete scenarios"}
+          </div>
         </div>
 
         {orderError && (

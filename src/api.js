@@ -95,6 +95,12 @@ export async function getProgress(userId) {
   return res.json();
 }
 
+// Server-authoritative list of unlocked simulator tools for this user.
+export async function getTools(userId) {
+  const res = await fetch(`${API_BASE}/config/tools/${userId}`);
+  return res.json();
+}
+
 export async function markComplete(userId, itemId) {
   const res = await fetch(`${API_BASE}/progress/${userId}/complete`, {
     method: "POST",

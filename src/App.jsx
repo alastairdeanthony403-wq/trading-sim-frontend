@@ -38,6 +38,9 @@ export default function App() {
   const [stopLossInput, setStopLossInput] = useState("");
   const [takeProfitInput, setTakeProfitInput] = useState("");
   const [trailInput, setTrailInput] = useState("");
+  const [leverage, setLeverage] = useState(1);
+  const [orderError, setOrderError] = useState("");
+  const [marginCall, setMarginCall] = useState(false);
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -51,6 +54,7 @@ export default function App() {
   const advanceTargetRef = useRef(0);            // latest bar to advance to
   const positionsRef = useRef([]);               // positions for async handlers
   positionsRef.current = positions;
+  const endedRef = useRef(false);                // guard: end the session once
 
   const startingBalance = session?.starting_balance ?? 10000;
   // Balance (realised) is derived from the authoritative positions list — no
@@ -166,16 +170,28 @@ export default function App() {
     try {
       const res = await advanceSession(session.session_id, target);
       if (Array.isArray(res.positions)) setPositions(res.positions);
-      const closed = (res.events || []).filter((e) => e.event === "closed");
+      setMarginCall(!!res.margin_call);
+      const closed = (res.events || []).filter((e) => e.event === "closed" || e.event === "liquidated");
       if (closed.length) {
         const last = closed[closed.length - 1];
-        setLastFill({ reason: last.reason, bar: last.bar_sequence, pnl: last.pnl });
+        setLastFill({ reason: last.reason || "liquidation", bar: last.bar_sequence, pnl: last.pnl });
+      }
+      if (res.blown && !endedRef.current) {
+        endedRef.current = true;
+        setPlaying(false);
+        setMarginCall(false);
+        const r = await endSession(session.session_id);
+        setResults(r);
+        const board = await getLeaderboard(session.scenario_id);
+        setLeaderboard(board);
+        setScreen("results");
+        return;
       }
     } catch {
       /* transient — next tick retries */
     } finally {
       advanceInFlightRef.current = false;
-      if (advanceTargetRef.current > target) runAdvance();  // catch up
+      if (!endedRef.current && advanceTargetRef.current > target) runAdvance();  // catch up
     }
   }, [session]);
 
@@ -231,6 +247,10 @@ export default function App() {
     setStopLossInput("");
     setTakeProfitInput("");
     setTrailInput("");
+    setLeverage(1);
+    setOrderError("");
+    setMarginCall(false);
+    endedRef.current = false;
     setLastFill(null);
     setResults(null);
     setScreen("playing");
@@ -244,7 +264,8 @@ export default function App() {
     if (orderType !== "market" && entryPriceInput === "") return;  // resting order needs a price
     const num = (v) => (v !== "" ? Number(v) : undefined);
     setLastFill(null);
-    await openTrade(session.session_id, {
+    setOrderError("");
+    const res = await openTrade(session.session_id, {
       direction,
       size: tradeSize,
       barSequence: currentBar.bar_sequence,
@@ -253,7 +274,12 @@ export default function App() {
       orderType,
       entryOrderPrice: num(entryPriceInput),
       trailDistance: num(trailInput),
+      leverage,
     });
+    if (res && res.error) {          // e.g. insufficient margin
+      setOrderError(res.error);
+      return;
+    }
     setEntryPriceInput("");
     setStopLossInput("");
     setTakeProfitInput("");
@@ -439,6 +465,76 @@ export default function App() {
     );
   }
 
+  if (screen === "results" && results && results.blown) {
+    const pm = results.post_mortem || {};
+    const curve = pm.equity_curve || [];
+    const disciplined = pm.disciplined_ending_balance;
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+        </header>
+        <main className="results blown">
+          <h2 className="blown-title">ACCOUNT BLOWN</h2>
+          <p className="blown-lede">
+            Your equity hit zero, so the account was liquidated. This is the single
+            most important thing to avoid — one over-sized, over-leveraged position can
+            end a career no matter how many good trades came before it. The score for a
+            blown account is <strong>zero</strong>, on purpose.
+          </p>
+
+          <div className="results-grid" style={{ marginBottom: 20 }}>
+            <Stat label="Ending balance" value={`$${results.ending_balance.toFixed(2)}`} />
+            <Stat label="Composite score" value="0" highlight />
+          </div>
+
+          {curve.length > 1 && <EquitySparkline curve={curve} start={startingBalance} />}
+
+          {pm.worst_trades && pm.worst_trades.length > 0 && (
+            <div className="pm-section">
+              <h3 className="section-label">What did the damage</h3>
+              <table className="pm-table">
+                <tbody>
+                  {pm.worst_trades.map((t, i) => (
+                    <tr key={i}>
+                      <td className={`pos-${t.direction}`}>{t.direction.toUpperCase()}</td>
+                      <td>{t.size} units{t.leverage > 1 ? ` · ${t.leverage}x` : ""}</td>
+                      <td>{(t.exit_reason || "").replace("_", " ")}</td>
+                      <td className="pnl-neg">{t.pnl.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {disciplined != null && (
+            <div className="pm-compare">
+              <div className="section-label">{pm.disciplined_note}</div>
+              <div className="pm-compare-row">
+                <span>Your account</span>
+                <span className="pnl-neg">${results.ending_balance.toFixed(2)}</span>
+              </div>
+              <div className="pm-compare-row">
+                <span>A disciplined 1%-risk version</span>
+                <span className={disciplined >= startingBalance ? "pnl-pos" : "pnl-neg"}>
+                  ${disciplined.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <button className="primary-btn" onClick={() => setScreen("select")} style={{ marginTop: 20 }}>
+            Try again
+          </button>
+          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
+            Back to menu
+          </button>
+        </main>
+      </div>
+    );
+  }
+
   if (screen === "results" && results) {
     return (
       <div className="app">
@@ -501,6 +597,13 @@ export default function App() {
 
       <div className="chart-container" ref={containerRef} />
 
+      {marginCall && (
+        <div className="margin-call-banner">
+          ⚠ MARGIN CALL — equity is close to the maintenance level. Reduce risk or
+          you'll be liquidated.
+        </div>
+      )}
+
       <div className="controls">
         <div className="control-row">
           <div className="speed-group">
@@ -538,6 +641,16 @@ export default function App() {
               type="number" className="size-input" value={tradeSize}
               onChange={(e) => setTradeSize(Number(e.target.value))} min="1"
             />
+          </label>
+          <label className="field-label">Leverage
+            <select
+              className="size-input" value={leverage}
+              onChange={(e) => setLeverage(Number(e.target.value))}
+            >
+              {[1, 2, 5, 10, 25, 50, 100].map((x) => (
+                <option key={x} value={x}>{x}x</option>
+              ))}
+            </select>
           </label>
           {orderType !== "market" && (
             <label className="field-label">Entry @
@@ -579,6 +692,12 @@ export default function App() {
             End session
           </button>
         </div>
+
+        {orderError && (
+          <div className="control-row">
+            <div className="fill-note pnl-neg" data-testid="order-error">{orderError}</div>
+          </div>
+        )}
 
         {(openPositions.length > 0 || pendingOrders.length > 0) && (
           <div className="positions-panel">
@@ -639,6 +758,29 @@ function Stat({ label, value, accent, highlight }) {
       <div className={`stat-value ${accent === true ? "pnl-pos" : accent === false ? "pnl-neg" : ""}`}>
         {value}
       </div>
+    </div>
+  );
+}
+
+function EquitySparkline({ curve, start }) {
+  const W = 520, H = 120, pad = 8;
+  const vals = curve.map((p) => p.equity);
+  const min = Math.min(...vals, 0);
+  const max = Math.max(...vals, start);
+  const span = max - min || 1;
+  const x = (i) => pad + (i / (curve.length - 1)) * (W - 2 * pad);
+  const y = (v) => H - pad - ((v - min) / span) * (H - 2 * pad);
+  const d = curve.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.equity).toFixed(1)}`).join(" ");
+  const zeroY = y(0);
+  return (
+    <div className="pm-section">
+      <h3 className="section-label">Equity curve</h3>
+      <svg className="pm-sparkline" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+        {min < 0 && (
+          <line x1={pad} y1={zeroY} x2={W - pad} y2={zeroY} stroke="#3a4452" strokeDasharray="3 3" strokeWidth="1" />
+        )}
+        <path d={d} fill="none" stroke="#d9534f" strokeWidth="2" />
+      </svg>
     </div>
   );
 }

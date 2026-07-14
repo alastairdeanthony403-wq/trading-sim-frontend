@@ -24,7 +24,7 @@ export async function getBars(sessionId, upTo) {
 
 export async function openTrade(sessionId, {
   direction, size, barSequence, stopLoss, takeProfit,
-  orderType = "market", entryOrderPrice, trailDistance,
+  orderType = "market", entryOrderPrice, trailDistance, leverage,
 }) {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/trades`, {
     method: "POST",
@@ -38,6 +38,7 @@ export async function openTrade(sessionId, {
       order_type: orderType,
       entry_order_price: entryOrderPrice,
       trail_distance: trailDistance,
+      leverage,
     }),
   });
   return res.json();

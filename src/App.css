@@ -535,6 +535,75 @@ body {
 }
 @keyframes mc-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
+/* ── Fund Manager mode + market gating (Phase D) ─────────────────────── */
+.fm-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  background: rgba(255, 194, 88, 0.08);
+  border: 1px solid rgba(255, 194, 88, 0.35);
+  border-radius: 3px;
+}
+.fm-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.fm-toggle input { accent-color: var(--amber); width: 15px; height: 15px; }
+.fm-toggle-label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--amber);
+}
+.fm-note { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+.scenario-card.locked { opacity: 0.55; cursor: not-allowed; }
+.scenario-card.locked:hover {
+  border-color: var(--line);
+  transform: none;
+  box-shadow: none;
+}
+.scenario-card.locked .scenario-tier { color: var(--muted); }
+.scenario-card.fm { border-color: rgba(255, 194, 88, 0.4); }
+.scenario-card.fm:hover {
+  border-color: var(--amber);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 22px rgba(255,194,88,0.12);
+}
+.scenario-fm-tag {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+  padding: 4px 16px 12px;
+}
+
+.fm-banner {
+  margin: 10px 0;
+  padding: 10px 16px;
+  background: rgba(255, 194, 88, 0.1);
+  border: 1px solid rgba(255, 194, 88, 0.4);
+  border-radius: 3px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.concentration-banner {
+  margin: 10px 0;
+  padding: 12px 16px;
+  background: rgba(255, 194, 88, 0.12);
+  border: 1px solid var(--amber);
+  border-radius: 3px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .results.blown .blown-title {
   color: var(--red);
   font-size: 34px;

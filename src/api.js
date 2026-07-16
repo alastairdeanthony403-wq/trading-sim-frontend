@@ -1,15 +1,20 @@
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-export async function listScenarios() {
-  const res = await fetch(`${API_BASE}/scenarios`);
+export async function listScenarios(userId) {
+  // Passing a user_id lets the server flag which markets the player's career
+  // level has unlocked (market_unlocked on each scenario).
+  const url = userId
+    ? `${API_BASE}/scenarios?user_id=${encodeURIComponent(userId)}`
+    : `${API_BASE}/scenarios`;
+  const res = await fetch(url);
   return res.json();
 }
 
-export async function startSession(scenarioId, userId = "guest") {
+export async function startSession(scenarioId, userId = "guest", mode = "standard") {
   const res = await fetch(`${API_BASE}/scenarios/${scenarioId}/start`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, starting_balance: 10000 }),
+    body: JSON.stringify({ user_id: userId, starting_balance: 10000, mode }),
   });
   return res.json();
 }

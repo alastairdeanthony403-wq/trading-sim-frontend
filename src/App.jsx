@@ -51,6 +51,8 @@ export default function App() {
   const [leverage, setLeverage] = useState(1);
   const [orderError, setOrderError] = useState("");
   const [marginCall, setMarginCall] = useState(false);
+  const [concentrated, setConcentrated] = useState(false);
+  const [fundManager, setFundManager] = useState(false);   // client-money rules
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -101,8 +103,14 @@ export default function App() {
   const balance = startingBalance + realisedPnl;
 
   useEffect(() => {
-    listScenarios().then(setScenarios);
+    listScenarios(getUserId()).then(setScenarios);
+    // Career drives which markets are unlocked and whether Fund Manager mode
+    // (a level-6 skill unlock) is available on the select screen.
+    getCareer(getUserId()).then(setCareer).catch(() => {});
   }, []);
+
+  // Fund Manager mode is the level-6 "Fund Manager" career unlock.
+  const fmUnlocked = (career?.level || 0) >= 6;
 
   const openProgress = useCallback(async () => {
     const p = await getProgress(getUserId());
@@ -219,6 +227,7 @@ export default function App() {
       const res = await advanceSession(session.session_id, target);
       if (Array.isArray(res.positions)) setPositions(res.positions);
       setMarginCall(!!res.margin_call);
+      setConcentrated(!!res.concentrated);
       if (activeMissionRef.current) {
         getMissionStatus(session.session_id, activeMissionRef.current.id)
           .then(setMissionStatus).catch(() => {});
@@ -232,6 +241,7 @@ export default function App() {
         endedRef.current = true;
         setPlaying(false);
         setMarginCall(false);
+        setConcentrated(false);
         const r = await endSession(session.session_id);
         setResults(r);
         await submitActiveMission(session.session_id);
@@ -287,9 +297,9 @@ export default function App() {
     }
   }, [positions, screen]);
 
-  const handleSelectScenario = useCallback(async (scenarioId, keepMission = false) => {
+  const handleSelectScenario = useCallback(async (scenarioId, keepMission = false, mode = "standard") => {
     setLoading(true);
-    const s = await startSession(scenarioId, getUserId());
+    const s = await startSession(scenarioId, getUserId(), mode);
     const bars = await getBars(s.session_id);
     try {
       const t = await getTools(getUserId());
@@ -309,6 +319,7 @@ export default function App() {
     setLeverage(1);
     setOrderError("");
     setMarginCall(false);
+    setConcentrated(false);
     endedRef.current = false;
     setLastFill(null);
     setResults(null);
@@ -757,20 +768,46 @@ export default function App() {
           <div className="logo">TAPE//RUN</div>
           <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
         </header>
+        {fmUnlocked && (
+          <div className="fm-bar">
+            <label className="fm-toggle">
+              <input
+                type="checkbox"
+                checked={fundManager}
+                onChange={(e) => setFundManager(e.target.checked)}
+              />
+              <span className="fm-toggle-label">Fund Manager mode</span>
+            </label>
+            <span className="fm-note">
+              {fundManager
+                ? "Client money: every trade needs a stop, max 1% risk each, an 8% drawdown ends the mandate."
+                : "Trade client money under strict risk limits."}
+            </span>
+          </div>
+        )}
         <main className="scenario-grid">
           {scenarios.length === 0 && <p className="muted">Loading scenarios…</p>}
-          {scenarios.map((s) => (
-            <button
-              key={s.id}
-              className="scenario-card"
-              onClick={() => handleSelectScenario(s.id)}
-              disabled={loading}
-            >
-              <div className="scenario-tier">TIER {s.difficulty_tier}</div>
-              <div className="scenario-meta">{s.asset_class.toUpperCase()} · {s.timeframe}</div>
-              <div className="scenario-bars">{s.bar_count} bars</div>
-            </button>
-          ))}
+          {scenarios.map((s) => {
+            const locked = s.market_unlocked === false;
+            return (
+              <button
+                key={s.id}
+                className={`scenario-card${locked ? " locked" : ""}${fundManager && !locked ? " fm" : ""}`}
+                onClick={() => !locked && handleSelectScenario(s.id, false, fundManager ? "fund_manager" : "standard")}
+                disabled={loading || locked}
+                title={locked ? "Reach a higher career level to unlock this market" : undefined}
+              >
+                <div className="scenario-tier">
+                  {locked ? "🔒 LOCKED" : `TIER ${s.difficulty_tier}`}
+                </div>
+                <div className="scenario-meta">{s.asset_class.toUpperCase()} · {s.timeframe}</div>
+                <div className="scenario-bars">
+                  {locked ? "Unlocks with career progress" : `${s.bar_count} bars`}
+                </div>
+                {fundManager && !locked && <div className="scenario-fm-tag">FUND MANAGER</div>}
+              </button>
+            );
+          })}
         </main>
       </div>
     );
@@ -953,10 +990,23 @@ export default function App() {
 
       <div className="chart-container" ref={containerRef} />
 
+      {session?.mode === "fund_manager" && (
+        <div className="fm-banner">
+          FUND MANAGER · client money — stop required, max 1% risk/trade, 8% drawdown ends the mandate
+        </div>
+      )}
+
       {marginCall && (
         <div className="margin-call-banner">
           ⚠ MARGIN CALL — equity is close to the maintenance level. Reduce risk or
           you'll be liquidated.
+        </div>
+      )}
+
+      {concentrated && (
+        <div className="concentration-banner">
+          ⚠ CONCENTRATED — one position holds most of your risk. Spread it out to
+          protect the book.
         </div>
       )}
 

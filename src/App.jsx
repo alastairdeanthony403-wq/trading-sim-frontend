@@ -8,6 +8,7 @@ import {
   closeTrade,
   advanceSession,
   getPositions,
+  getEvents,
   endSession,
   getLeaderboard,
   getProgress,
@@ -63,6 +64,7 @@ export default function App() {
   const [marginCall, setMarginCall] = useState(false);
   const [concentrated, setConcentrated] = useState(false);
   const [fundManager, setFundManager] = useState(false);   // client-money rules
+  const [events, setEvents] = useState([]);                // scripted news events
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -111,6 +113,11 @@ export default function App() {
     .filter((p) => p.status === "closed")
     .reduce((sum, p) => sum + (p.pnl || 0), 0);
   const balance = startingBalance + realisedPnl;
+
+  // News events revealed so far: those whose bar has been reached in playback.
+  const newsBarIdx = visibleCount - 1;
+  const revealedEvents = events.filter((e) => e.bar_sequence <= newsBarIdx);
+  const latestEvent = revealedEvents[revealedEvents.length - 1] || null;
 
   useEffect(() => {
     listScenarios(getUserId()).then(setScenarios);
@@ -317,6 +324,9 @@ export default function App() {
       setToolLevel(t.tool_level || 1);
       if (!(t.unlocked_tools || []).includes("leverage")) setLeverage(1);
     } catch { setUnlockedTools([]); setToolLevel(1); }
+    try {
+      setEvents(await getEvents(s.session_id));
+    } catch { setEvents([]); }
     setSession(s);
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
@@ -1020,6 +1030,29 @@ export default function App() {
         <div className="concentration-banner">
           ⚠ CONCENTRATED — one position holds most of your risk. Spread it out to
           protect the book.
+        </div>
+      )}
+
+      {latestEvent && (
+        <div className="news-feed">
+          <div className="news-latest">
+            <span className="news-badge">BREAKING</span>
+            <span className={`news-headline sent-${latestEvent.sentiment}`}>
+              {latestEvent.headline}
+            </span>
+          </div>
+          {latestEvent.detail && <div className="news-detail">{latestEvent.detail}</div>}
+          {revealedEvents.length > 1 && (
+            <div className="news-history">
+              {revealedEvents.slice(0, -1).reverse().map((e, i) => (
+                <div key={i} className="news-item">
+                  <span className={`sent-dot sent-${e.sentiment}`} />
+                  <span className="news-cat">{e.category.replace(/_/g, " ")}</span>
+                  {e.headline}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

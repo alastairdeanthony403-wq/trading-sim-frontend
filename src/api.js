@@ -65,6 +65,13 @@ export async function getPositions(sessionId) {
   return res.json();
 }
 
+// Scripted news events for the session's scenario (Scenario Mode). Revealed
+// client-side as playback reaches each event's bar.
+export async function getEvents(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/events`);
+  return res.json();
+}
+
 export async function modifyTrade(tradeId, changes) {
   const res = await fetch(`${API_BASE}/trades/${tradeId}`, {
     method: "PATCH",

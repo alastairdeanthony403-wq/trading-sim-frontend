@@ -57,6 +57,48 @@ export function MiniChart({ bars, width = 320, height = 200, pad = 10, overlays 
   );
 }
 
+// ── timeframe compare: same market, two timeframes, one question ─────────
+// step: { type:"compare", prompt, charts:[{caption,bars},...], options, correctIndex, explanation }
+export function Compare({ step, onResult }) {
+  const [answer, setAnswer] = useState(null);
+  const pick = (idx) => {
+    if (answer != null) return;
+    setAnswer(idx);
+    onResult(idx === step.correctIndex);
+  };
+  return (
+    <div className="exercise compare-ex">
+      <p className="lesson-question">{step.prompt}</p>
+      <div className="ex-compare">
+        {step.charts.map((ch, i) => (
+          <figure key={i}>
+            <MiniChart bars={ch.bars} width={280} height={170} />
+            <figcaption>{ch.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+      <div className="lesson-options">
+        {step.options.map((opt, idx) => {
+          let cls = "lesson-option";
+          if (answer != null) {
+            if (idx === step.correctIndex) cls += " correct";
+            else if (idx === answer) cls += " incorrect";
+          }
+          return <button key={idx} className={cls} onClick={() => pick(idx)}>{opt}</button>;
+        })}
+      </div>
+      {answer != null && (
+        <div className="lesson-feedback">
+          <p className={answer === step.correctIndex ? "feedback-correct" : "feedback-incorrect"}>
+            {answer === step.correctIndex ? "Correct." : "Not quite."}
+          </p>
+          <p className="lesson-explanation">{step.explanation}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── draw-on-chart: mark a support/resistance zone ────────────────────────
 // step: { type:"mark_chart", bars, target_price, tolerance?, prompt?, kind? }
 export function MarkChart({ step, onResult }) {

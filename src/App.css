@@ -732,6 +732,50 @@ body {
 .ex-compare figure { margin: 0; flex: 1; min-width: 200px; }
 .ex-compare figcaption { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
 
+/* ── Competitions & leagues (Phase G) ────────────────────────────────── */
+.compete { max-width: 720px; margin: 0 auto; text-align: left; }
+.compete h2 { margin-bottom: 16px; }
+.small { font-size: 11px; }
+.text-input {
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 8px 10px;
+  flex: 1;
+  min-width: 0;
+}
+.name-card, .contest-card, .leagues-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.name-label { font-family: var(--mono); font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px; }
+.name-row { display: flex; gap: 8px; }
+.contest-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.contest-title { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 4px 0; }
+.board-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-family: var(--mono); font-size: 13px; }
+.board-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.board-rank { color: var(--muted); width: 36px; }
+.board-score { text-align: right; color: var(--cyan); font-weight: 700; }
+.board-me { background: rgba(69, 216, 255, 0.08); }
+.board-me td { color: var(--text); }
+.league-actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
+.league-action { display: flex; gap: 8px; flex: 1; min-width: 240px; }
+.league-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.league-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--panel-raised); border: 1px solid var(--line); border-radius: 3px;
+  padding: 10px 12px; cursor: pointer; color: var(--text); font-family: var(--mono);
+}
+.league-item:hover { border-color: var(--cyan); }
+.league-item-name { font-weight: 700; }
+.league-item-meta { font-size: 11px; color: var(--muted); }
+
 .results.blown .blown-title {
   color: var(--red);
   font-size: 34px;

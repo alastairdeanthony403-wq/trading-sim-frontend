@@ -682,6 +682,41 @@ body {
 .scam-anatomy { margin: 6px 0 0; padding-left: 18px; }
 .scam-anatomy li { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 4px; }
 
+/* ── Character voices (Phase E step 4) ───────────────────────────────── */
+.voices { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.decision-voices {
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+}
+.dv-tag {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.decision-voices .voices, .decision-voices .voice { margin-top: 0; }
+.decision-voices { display: flex; flex-direction: column; gap: 6px; }
+.voice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--muted);
+  border-radius: 2px;
+  background: var(--panel-raised);
+}
+.voice-who { font-family: var(--mono); font-size: 9px; letter-spacing: 0.5px; color: var(--muted); text-transform: uppercase; }
+.voice-line { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.4; }
+.voice-hype { border-left-color: var(--amber); }
+.voice-aggressive { border-left-color: var(--red); }
+.voice-cautious { border-left-color: var(--cyan); }
+.voice-sober { border-left-color: var(--green); }
+
 .results.blown .blown-title {
   color: var(--red);
   font-size: 34px;

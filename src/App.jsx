@@ -67,6 +67,7 @@ export default function App() {
   const [fundManager, setFundManager] = useState(false);   // client-money rules
   const [events, setEvents] = useState([]);                // scripted news events
   const [scamDebrief, setScamDebrief] = useState(null);    // pump-and-dump debrief
+  const [voices, setVoices] = useState([]);                // character voices at decision points
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -247,6 +248,7 @@ export default function App() {
       if (Array.isArray(res.positions)) setPositions(res.positions);
       setMarginCall(!!res.margin_call);
       setConcentrated(!!res.concentrated);
+      if (Array.isArray(res.voices)) setVoices(res.voices);
       if (activeMissionRef.current) {
         getMissionStatus(session.session_id, activeMissionRef.current.id)
           .then(setMissionStatus).catch(() => {});
@@ -331,6 +333,7 @@ export default function App() {
       setEvents(await getEvents(s.session_id));
     } catch { setEvents([]); }
     setScamDebrief(null);
+    setVoices([]);
     setSession(s);
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
@@ -1041,6 +1044,18 @@ export default function App() {
         </div>
       )}
 
+      {voices.length > 0 && (
+        <div className="decision-voices">
+          <div className="dv-tag">IN YOUR HEAD</div>
+          {voices.map((v, i) => (
+            <div key={i} className={`voice voice-${v.stance}`}>
+              <span className="voice-who">{v.name} · {v.role}</span>
+              <span className="voice-line">"{v.line}"</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {latestEvent && (
         <div className="news-feed">
           <div className="news-latest">
@@ -1050,6 +1065,16 @@ export default function App() {
             </span>
           </div>
           {latestEvent.detail && <div className="news-detail">{latestEvent.detail}</div>}
+          {latestEvent.voices && latestEvent.voices.length > 0 && (
+            <div className="voices">
+              {latestEvent.voices.map((v, i) => (
+                <div key={i} className={`voice voice-${v.stance}`}>
+                  <span className="voice-who">{v.name} · {v.role}</span>
+                  <span className="voice-line">"{v.line}"</span>
+                </div>
+              ))}
+            </div>
+          )}
           {revealedEvents.length > 1 && (
             <div className="news-history">
               {revealedEvents.slice(0, -1).reverse().map((e, i) => (

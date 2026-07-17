@@ -4,7 +4,11 @@ import { CHECKS } from "./checks";
 import { getUserId } from "./user";
 import { markComplete } from "./api";
 import Diagram from "./Diagrams";
+import { BuildCandle } from "./exercises";
 import { Gloss } from "./glossary";
+
+// Step types that are graded (award XP, count toward a perfect lesson).
+const GRADABLE = new Set(["question", "build_candle", "mark_chart", "compare"]);
 import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠" };
@@ -179,15 +183,16 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
   const [sessionXp, setSessionXp] = useState(0);
   const [summary, setSummary] = useState(null);
   const [xpFlash, setXpFlash] = useState(null);
+  const [solved, setSolved] = useState(false);   // interactive exercise submitted
 
   const step = lesson.steps[stepIndex];
   const isLastStep = stepIndex === lesson.steps.length - 1;
-  const totalQuestions = lesson.steps.filter((s) => s.type === "question").length;
+  const totalGradable = lesson.steps.filter((s) => GRADABLE.has(s.type)).length;
 
   const finish = () => {
     let earned = sessionXp;
     let perfect = false;
-    if (totalQuestions > 0 && correctCount === totalQuestions) {
+    if (totalGradable > 0 && correctCount === totalGradable) {
       earned += XP_RULES.perfectLesson;
       perfect = true;
     }
@@ -201,13 +206,13 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
     } else {
       setStepIndex((i) => i + 1);
       setAnswer(null);
+      setSolved(false);
     }
   };
 
-  const answerQ = (idx) => {
-    if (answer != null) return;
-    setAnswer(idx);
-    if (idx === step.correctIndex) {
+  // Award XP for a graded step (multiple-choice or interactive exercise).
+  const grade = (correct) => {
+    if (correct) {
       const newStreak = streak + 1;
       setStreak(newStreak);
       setCorrectCount((c) => c + 1);
@@ -220,6 +225,17 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
     }
   };
 
+  const answerQ = (idx) => {
+    if (answer != null) return;
+    setAnswer(idx);
+    grade(idx === step.correctIndex);
+  };
+
+  const solveExercise = (correct) => {
+    grade(correct);
+    setSolved(true);
+  };
+
   if (summary) {
     return (
       <div className="app">
@@ -228,7 +244,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
           <div className="summary-emoji">{summary.perfect ? "💎" : "✅"}</div>
           <h2>{summary.perfect ? "Perfect lesson!" : "Lesson complete"}</h2>
           <p className="lesson-body">
-            {correctCount} / {totalQuestions} correct{summary.perfect ? " — flawless run, bonus earned." : "."}
+            {correctCount} / {totalGradable} correct{summary.perfect ? " — flawless run, bonus earned." : "."}
           </p>
           <div className="xp-award">+{summary.earned} XP</div>
           {summary.leveledUp && (
@@ -262,6 +278,17 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
             <p className="lesson-body"><Gloss>{step.text}</Gloss></p>
             {step.image && <Diagram id={step.image} />}
             <button className="primary-btn" onClick={next}>Continue</button>
+          </>
+        )}
+
+        {step.type === "build_candle" && (
+          <>
+            <BuildCandle key={stepIndex} step={step} onResult={solveExercise} />
+            {solved && (
+              <button className="primary-btn" onClick={next}>
+                {isLastStep ? "Finish lesson" : "Continue"}
+              </button>
+            )}
           </>
         )}
 

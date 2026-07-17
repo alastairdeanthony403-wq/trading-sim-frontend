@@ -717,6 +717,21 @@ body {
 .voice-cautious { border-left-color: var(--cyan); }
 .voice-sober { border-left-color: var(--green); }
 
+/* ── Interactive lesson exercises (Phase F) ──────────────────────────── */
+.exercise { margin: 8px 0 4px; }
+.ex-candle-wrap { display: flex; gap: 20px; align-items: center; margin: 12px 0 16px; flex-wrap: wrap; }
+.ex-candle { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.ex-sliders { display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 220px; }
+.ex-slider { display: flex; flex-direction: column; gap: 4px; }
+.ex-slider-label { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+.ex-slider-label b { color: var(--text); }
+.ex-slider input[type="range"] { width: 100%; accent-color: var(--cyan); }
+.ex-chart { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; touch-action: none; cursor: crosshair; }
+.ex-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+.ex-compare { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0; }
+.ex-compare figure { margin: 0; flex: 1; min-width: 200px; }
+.ex-compare figcaption { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
+
 .results.blown .blown-title {
   color: var(--red);
   font-size: 34px;

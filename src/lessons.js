@@ -662,6 +662,11 @@ export const LESSONS = {
         image: "candle-anatomy",
       },
       {
+        type: "build_candle",
+        prompt: "Build it yourself. Drag the sliders to make a bullish candle: open 50, high 55, low 49, close 54.",
+        target: { open: 50, high: 55, low: 49, close: 54 },
+      },
+      {
         type: "question",
         prompt: "A daily candle: open $50, high $55, low $49, close $54. Describe the body.",
         image: "candle-anatomy",

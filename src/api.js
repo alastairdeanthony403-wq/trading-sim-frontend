@@ -72,6 +72,13 @@ export async function getEvents(sessionId) {
   return res.json();
 }
 
+// Post-scenario debrief for scam (pump-and-dump) scenarios. Returns
+// { is_scam, verdict, took_bait, anatomy, ... }.
+export async function getScamDebrief(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/scam-debrief`);
+  return res.json();
+}
+
 export async function modifyTrade(tradeId, changes) {
   const res = await fetch(`${API_BASE}/trades/${tradeId}`, {
     method: "PATCH",

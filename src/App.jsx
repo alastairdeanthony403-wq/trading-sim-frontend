@@ -9,6 +9,7 @@ import {
   advanceSession,
   getPositions,
   getEvents,
+  getScamDebrief,
   endSession,
   getLeaderboard,
   getProgress,
@@ -65,6 +66,7 @@ export default function App() {
   const [concentrated, setConcentrated] = useState(false);
   const [fundManager, setFundManager] = useState(false);   // client-money rules
   const [events, setEvents] = useState([]);                // scripted news events
+  const [scamDebrief, setScamDebrief] = useState(null);    // pump-and-dump debrief
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -261,6 +263,7 @@ export default function App() {
         setConcentrated(false);
         const r = await endSession(session.session_id);
         setResults(r);
+        try { setScamDebrief(await getScamDebrief(session.session_id)); } catch { setScamDebrief(null); }
         await submitActiveMission(session.session_id);
         const board = await getLeaderboard(session.scenario_id);
         setLeaderboard(board);
@@ -327,6 +330,7 @@ export default function App() {
     try {
       setEvents(await getEvents(s.session_id));
     } catch { setEvents([]); }
+    setScamDebrief(null);
     setSession(s);
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
@@ -410,6 +414,7 @@ export default function App() {
     }
     const res = await endSession(session.session_id);
     setResults(res);
+    try { setScamDebrief(await getScamDebrief(session.session_id)); } catch { setScamDebrief(null); }
     await submitActiveMission(session.session_id);
     const board = await getLeaderboard(session.scenario_id);
     setLeaderboard(board);
@@ -895,6 +900,8 @@ export default function App() {
             </div>
           )}
 
+          <ScamDebrief debrief={scamDebrief} />
+
           <button className="primary-btn" onClick={() => setScreen("select")} style={{ marginTop: 20 }}>
             Try again
           </button>
@@ -917,6 +924,7 @@ export default function App() {
         </header>
         <main className="results">
           <h2>Session complete</h2>
+          <ScamDebrief debrief={scamDebrief} />
           {missionResult && (
             <div className={`mission-result ${missionResult.passed ? "passed" : "failed"}`}>
               <div className="mission-result-head">
@@ -1232,6 +1240,26 @@ export default function App() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ScamDebrief({ debrief }) {
+  if (!debrief || !debrief.is_scam) return null;
+  const verdict = debrief.verdict;
+  const head = verdict === "took_bait"
+    ? { cls: "bad", title: "You took the bait", lede: "You held a long position straight into the rug. That's exactly how a pump-and-dump catches people — the hype peaks right as the smart money is selling to you." }
+    : verdict === "got_out"
+    ? { cls: "ok", title: "You played the hype and got out", lede: "You were exposed during the pump but exited before the collapse. That works until it doesn't — the rug can come without warning, so recognising the setup and staying out is the durable skill." }
+    : { cls: "good", title: "You didn't take the bait", lede: "You stayed out of the pump-and-dump. That is the whole lesson — the reliable edge against a scam is not trading it." };
+  return (
+    <div className={`scam-debrief scam-${head.cls}`}>
+      <div className="scam-title">{head.title}</div>
+      <p className="scam-lede">{head.lede}</p>
+      <div className="section-label">How to recognise the next one</div>
+      <ul className="scam-anatomy">
+        {(debrief.anatomy || []).map((a, i) => <li key={i}>{a}</li>)}
+      </ul>
     </div>
   );
 }

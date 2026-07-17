@@ -4,7 +4,7 @@ import { CHECKS } from "./checks";
 import { getUserId } from "./user";
 import { markComplete } from "./api";
 import Diagram from "./Diagrams";
-import { BuildCandle } from "./exercises";
+import { BuildCandle, MarkChart } from "./exercises";
 import { Gloss } from "./glossary";
 
 // Step types that are graded (award XP, count toward a perfect lesson).
@@ -284,6 +284,17 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
         {step.type === "build_candle" && (
           <>
             <BuildCandle key={stepIndex} step={step} onResult={solveExercise} />
+            {solved && (
+              <button className="primary-btn" onClick={next}>
+                {isLastStep ? "Finish lesson" : "Continue"}
+              </button>
+            )}
+          </>
+        )}
+
+        {step.type === "mark_chart" && (
+          <>
+            <MarkChart key={stepIndex} step={step} onResult={solveExercise} />
             {solved && (
               <button className="primary-btn" onClick={next}>
                 {isLastStep ? "Finish lesson" : "Continue"}

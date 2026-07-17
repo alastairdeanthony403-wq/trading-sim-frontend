@@ -32,6 +32,16 @@ const SPEEDS = [
   { label: "Max", ms: 40 },
 ];
 
+// Friendly labels for synthetic-market regime tags (Phase E).
+const REGIME_LABELS = {
+  trend_up: "Uptrend", trend_down: "Downtrend", range: "Range",
+  high_vol: "High Volatility", crash: "Crash", bubble_pop: "Bubble & Pop",
+};
+function regimeOf(tags) {
+  for (const t of tags || []) if (REGIME_LABELS[t]) return REGIME_LABELS[t];
+  return null;
+}
+
 export default function App() {
   const [screen, setScreen] = useState("menu"); // menu | select | playing | results | progress | learn
   const [scenarios, setScenarios] = useState([]);
@@ -804,6 +814,9 @@ export default function App() {
                 <div className="scenario-bars">
                   {locked ? "Unlocks with career progress" : `${s.bar_count} bars`}
                 </div>
+                {!locked && regimeOf(s.tags) && (
+                  <div className="scenario-regime">{regimeOf(s.tags)}</div>
+                )}
                 {fundManager && !locked && <div className="scenario-fm-tag">FUND MANAGER</div>}
               </button>
             );

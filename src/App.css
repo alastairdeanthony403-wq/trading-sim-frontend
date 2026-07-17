@@ -578,6 +578,19 @@ body {
   color: var(--amber);
   padding: 4px 16px 12px;
 }
+.scenario-regime {
+  display: inline-block;
+  margin: 4px 16px 12px;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  border: 1px solid rgba(69, 216, 255, 0.35);
+  border-radius: 3px;
+}
 
 .fm-banner {
   margin: 10px 0;

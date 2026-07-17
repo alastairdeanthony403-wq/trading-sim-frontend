@@ -47,8 +47,12 @@ const REGIME_LABELS = {
   trend_up: "Uptrend", trend_down: "Downtrend", range: "Range",
   high_vol: "High Volatility", crash: "Crash", bubble_pop: "Bubble & Pop",
 };
-function regimeOf(tags) {
-  for (const t of tags || []) if (REGIME_LABELS[t]) return REGIME_LABELS[t];
+// A scenario's headline badge: scam/news take priority over the base regime.
+function scenarioBadge(tags) {
+  const t = tags || [];
+  if (t.includes("scam")) return { label: "Pump & Dump", cls: "badge-scam" };
+  if (t.includes("news") || t.includes("scenario_mode")) return { label: "Breaking News", cls: "badge-news" };
+  for (const tag of t) if (REGIME_LABELS[tag]) return { label: REGIME_LABELS[tag], cls: "scenario-regime" };
   return null;
 }
 
@@ -1127,8 +1131,8 @@ export default function App() {
                 <div className="scenario-bars">
                   {locked ? "Unlocks with career progress" : `${s.bar_count} bars`}
                 </div>
-                {!locked && regimeOf(s.tags) && (
-                  <div className="scenario-regime">{regimeOf(s.tags)}</div>
+                {!locked && scenarioBadge(s.tags) && (
+                  <div className={scenarioBadge(s.tags).cls}>{scenarioBadge(s.tags).label}</div>
                 )}
                 {fundManager && !locked && <div className="scenario-fm-tag">FUND MANAGER</div>}
               </button>

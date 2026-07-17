@@ -1,7 +1,105 @@
 // Interactive lesson exercises (Phase F). Each takes a `step` and calls
 // onResult(correct) once the learner submits. They render their own submit +
 // feedback; the LessonPlayer handles XP and the Continue button.
-import { useState, useMemo } from "react";
+import { useState, useRef } from "react";
+
+// ── shared mini candlestick chart (dependency-free SVG) ──────────────────
+export function MiniChart({ bars, width = 320, height = 200, pad = 10, overlays = [], onPick, pickable }) {
+  const pmin = Math.min(...bars.map((b) => b.l));
+  const pmax = Math.max(...bars.map((b) => b.h));
+  const range = pmax - pmin || 1;
+  const lo = pmin - range * 0.08, hi = pmax + range * 0.08;
+  const y = (v) => priceToY(v, lo, hi, height, pad);
+  const n = bars.length;
+  const slot = (width - 2 * pad) / n;
+  const bw = Math.max(2, slot * 0.6);
+  const svgRef = useRef(null);
+
+  const handlePick = (e) => {
+    if (!pickable || !onPick) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const cy = e.clientY - rect.top;
+    const price = lo + (1 - (cy - pad) / (height - 2 * pad)) * (hi - lo);
+    onPick(price);
+  };
+
+  return (
+    <svg ref={svgRef} width={width} height={height} className="ex-chart"
+         onPointerDown={handlePick} style={pickable ? { cursor: "crosshair" } : undefined}>
+      {overlays.map((ov, i) => {
+        const yc = y(ov.price);
+        const band = ov.tolerance ? Math.abs(y(ov.price - ov.tolerance) - y(ov.price + ov.tolerance)) : 0;
+        return (
+          <g key={i}>
+            {band > 0 && (
+              <rect x={pad} y={yc - band / 2} width={width - 2 * pad} height={band}
+                    fill={ov.color} opacity="0.15" />
+            )}
+            <line x1={pad} y1={yc} x2={width - pad} y2={yc} stroke={ov.color}
+                  strokeWidth="1.5" strokeDasharray={ov.dashed ? "5 4" : undefined} />
+          </g>
+        );
+      })}
+      {bars.map((b, i) => {
+        const up = b.c >= b.o;
+        const color = up ? "#2ef2a0" : "#ff5f5c";
+        const x = pad + i * slot + slot / 2;
+        const bodyTop = Math.min(y(b.o), y(b.c));
+        const bodyH = Math.max(1.5, Math.abs(y(b.c) - y(b.o)));
+        return (
+          <g key={i}>
+            <line x1={x} y1={y(b.h)} x2={x} y2={y(b.l)} stroke={color} strokeWidth="1" />
+            <rect x={x - bw / 2} y={bodyTop} width={bw} height={bodyH} fill={color} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── draw-on-chart: mark a support/resistance zone ────────────────────────
+// step: { type:"mark_chart", bars, target_price, tolerance?, prompt?, kind? }
+export function MarkChart({ step, onResult }) {
+  const bars = step.bars;
+  const span = Math.max(...bars.map((b) => b.h)) - Math.min(...bars.map((b) => b.l));
+  const tol = step.tolerance ?? span * 0.06;
+  const [price, setPrice] = useState(null);
+  const [done, setDone] = useState(false);
+  const correct = price != null && Math.abs(price - step.target_price) <= tol;
+
+  const overlays = [];
+  if (price != null) overlays.push({ price, color: "#45d8ff", dashed: true });
+  if (done) overlays.push({ price: step.target_price, tolerance: tol, color: "#2ef2a0" });
+
+  return (
+    <div className="exercise mark-chart">
+      <p className="lesson-question">
+        {step.prompt || `Click on the chart to mark the ${step.kind || "key"} level the price keeps reacting to.`}
+      </p>
+      <MiniChart bars={bars} overlays={overlays} pickable={!done}
+                 onPick={(p) => setPrice(p)} />
+      <div className="ex-hint">
+        {price == null ? "Tap the chart where you see the zone." : `Marked at ${price.toFixed(1)}.`}
+      </div>
+      {!done && price != null && (
+        <button className="primary-btn" onClick={() => { setDone(true); onResult(correct); }}>
+          Submit zone
+        </button>
+      )}
+      {done && (
+        <div className="lesson-feedback">
+          <p className={correct ? "feedback-correct" : "feedback-incorrect"}>
+            {correct ? "Good eye — that's the zone." : "Off the mark this time."}
+          </p>
+          <p className="lesson-explanation">
+            The green band is the zone we were looking for (around {step.target_price}). Support and
+            resistance are areas, not exact lines — being inside the band is what counts.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── shared candle SVG ────────────────────────────────────────────────────
 function priceToY(v, pmin, pmax, h, pad) {

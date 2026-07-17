@@ -1878,4 +1878,159 @@ export const LESSONS = {
       },
     ],
   },
+
+  // ── Unit 6 — Fundamentals & leverage (Phase F) ──────────────────────────
+  fundamentals_companies: {
+    title: "Reading a company",
+    steps: [
+      {
+        type: "teach",
+        text: "A share is part-ownership of a real business. Over the long run its value comes from that business's ability to generate cash. Fundamentals are the numbers that describe the business behind the ticker.",
+      },
+      {
+        type: "teach",
+        text: "The core figures: REVENUE (total sales), NET PROFIT (what's left after all costs), DEBT (what it owes), CASH FLOW (actual cash moving in and out), and the P/E RATIO — price ÷ earnings per share, roughly how many years of today's earnings you're paying for.",
+      },
+      {
+        type: "question",
+        prompt: "Dossier — Company A: revenue growing, low debt, positive cash flow, P/E 15. Company B: revenue flat, high debt, negative cash flow, P/E 60. Which is financially healthier?",
+        options: [
+          "Company B — the higher P/E means it's worth more",
+          "Company A — growing sales, real cash, and manageable debt",
+          "They're identical",
+          "You can't tell from fundamentals",
+        ],
+        correctIndex: 1,
+        explanation: "Growing revenue + positive cash flow + low debt is durable. B is burning cash, carrying heavy debt, and priced at 60× earnings — fragile if anything disappoints.",
+      },
+      {
+        type: "teach",
+        text: "P/E is a valuation gauge, not a verdict. A high P/E means the market is pricing in strong FUTURE growth. If that growth disappoints, the price can fall hard even when the company is otherwise fine — it was 'priced for perfection'.",
+      },
+      {
+        type: "question",
+        prompt: "A company on a P/E of 80 reports solid but unspectacular growth. What often happens to the price?",
+        options: [
+          "It always rises — growth is growth",
+          "It can fall, because expectations baked into the price were higher than the result",
+          "Nothing ever happens on earnings",
+          "The P/E makes it immune to drops",
+        ],
+        correctIndex: 1,
+        explanation: "At 80× earnings the market demanded spectacular growth. Merely 'solid' misses that bar, so the price can drop even on good numbers.",
+      },
+      {
+        type: "teach",
+        text: "No single number decides. Read them together: growing revenue, real cash flow, and manageable debt is a durable business; the opposite is fragile no matter how loud the hype. Fundamentals tell you WHAT to own; they don't time WHEN.",
+      },
+    ],
+  },
+
+  earnings_reports: {
+    title: "Earnings: expectations vs results",
+    steps: [
+      {
+        type: "teach",
+        text: "Public companies report results every quarter. What moves the price on the day is rarely the raw numbers — it's the numbers versus what the market already EXPECTED.",
+      },
+      {
+        type: "question",
+        prompt: "A company grows profit 20% year-on-year, but analysts expected 30%. Likely reaction?",
+        options: [
+          "Price rises — profit grew",
+          "Price falls — it 'missed' expectations even though profit grew",
+          "No reaction at all",
+          "Trading is suspended",
+        ],
+        correctIndex: 1,
+        explanation: "Growth of 20% against an expected 30% is a miss. The market trades the gap between result and expectation, not the headline alone.",
+      },
+      {
+        type: "teach",
+        text: "'Priced in': when everyone already expects good news, the price often reflects it BEFORE the report. So good news can be met with a sell-off — the classic 'buy the rumour, sell the news'.",
+      },
+      {
+        type: "question",
+        prompt: "A stock rallies 40% into earnings on hype, then reports exactly in-line results. Common outcome?",
+        options: [
+          "Another 40% rally",
+          "It sells off — the good news was already priced in",
+          "It gets delisted",
+          "Nothing can be said",
+        ],
+        correctIndex: 1,
+        explanation: "In-line results give buyers nothing new after a hype run-up. With the good news already in the price, the path of least resistance is down.",
+      },
+      {
+        type: "teach",
+        text: "Earnings also bring a VOLATILITY and SPREAD spike — gaps, whipsaws, and wide spreads that make risk hard to control. Holding through a report is a coin-flip on expectations, not a read on the chart.",
+      },
+      {
+        type: "question",
+        prompt: "Why do many disciplined traders reduce or close positions before an earnings report?",
+        options: [
+          "It's a rule that profits are guaranteed",
+          "Because the result-vs-expectation outcome is unpredictable and gaps/spreads make risk hard to control",
+          "Because earnings never move price",
+          "To avoid paying tax",
+        ],
+        correctIndex: 1,
+        explanation: "You can't stop your way out of an overnight gap. When the outcome is a coin-flip on expectations, sitting out is a legitimate way to protect capital.",
+      },
+    ],
+  },
+
+  leverage_margin: {
+    title: "Leverage & margin",
+    steps: [
+      {
+        type: "teach",
+        text: "Leverage lets you control a position larger than your cash by borrowing. MARGIN is the collateral the broker makes you post against it. 10× leverage means $1,000 of margin controls a $10,000 position.",
+      },
+      {
+        type: "question",
+        prompt: "You control a $10,000 position with $1,000 margin (10×). The asset moves 5% against you. What happens to your margin?",
+        options: [
+          "You lose 5% of your margin",
+          "You lose about 50% of your margin — a 5% move × 10× leverage",
+          "Nothing, margin is protected",
+          "You lose exactly $5",
+        ],
+        correctIndex: 1,
+        explanation: "5% of $10,000 is $500 — half of your $1,000 margin. Leverage multiplies the move against your posted collateral.",
+      },
+      {
+        type: "teach",
+        text: "Leverage multiplies BOTH directions. MAINTENANCE MARGIN is the floor: drop below it and you're LIQUIDATED — force-closed at market, often at the worst possible price. That's the mechanic behind the ACCOUNT BLOWN screen in the sim.",
+      },
+      {
+        type: "question",
+        prompt: "10× leverage, no stop, the asset gaps 12% against you overnight. Likely result?",
+        options: [
+          "A small, recoverable loss",
+          "Liquidation — the position is force-closed and most or all of your margin is gone",
+          "The broker absorbs the loss",
+          "The trade simply pauses",
+        ],
+        correctIndex: 1,
+        explanation: "A 12% adverse move at 10× is a 120% hit to margin — well past the maintenance floor. The position is liquidated and the margin is wiped.",
+      },
+      {
+        type: "teach",
+        text: "Leverage doesn't change your EDGE — it changes your SURVIVAL odds. The same setup at 1× survives a bad run that 20× would blow up. With leverage, position sizing and stops matter MORE, not less.",
+      },
+      {
+        type: "question",
+        prompt: "What's the safer way to use leverage?",
+        options: [
+          "Max leverage on every trade to grow faster",
+          "Keep risk-per-trade fixed (e.g. 1%) and let leverage only reduce the cash tied up — never increase the loss when your stop is hit",
+          "Skip stops so you're never shaken out",
+          "Only use leverage on 'sure things'",
+        ],
+        correctIndex: 1,
+        explanation: "Decide the dollar risk from your stop FIRST (say 1% of the account), then size to it. Used that way leverage frees up cash without enlarging the loss — the discipline, not the leverage, keeps you alive.",
+      },
+    ],
+  },
 };

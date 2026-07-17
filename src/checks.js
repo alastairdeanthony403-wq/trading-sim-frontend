@@ -492,4 +492,53 @@ export const CHECKS = {
       },
     ],
   },
+
+  check_fundamentals: {
+    title: "Unit 6 check: Fundamentals & leverage",
+    passMark: 5,
+    practice: "Now apply it: in the simulator, unlock a real market and check its scenario tags. Before trading a leveraged position, state your dollar risk FIRST (1% of the account), then size to your stop — never let the leverage decide the loss.",
+    questions: [
+      {
+        prompt: "Two companies: A has growing revenue, positive cash flow, low debt, P/E 15. B has flat revenue, negative cash flow, high debt, P/E 60. Which business is more durable?",
+        options: ["B — the higher P/E", "A — real cash, growing sales, manageable debt", "Identical", "Impossible to say"],
+        correctIndex: 1,
+        explanation: "Durability comes from cash generation and a sound balance sheet. B is burning cash at 60× earnings — fragile if anything slips.",
+      },
+      {
+        prompt: "A company grows profit 20%, but the market expected 30%. Likely reaction on the day?",
+        options: ["Rally — profit grew", "Sell-off — it missed expectations", "No move", "Halted"],
+        correctIndex: 1,
+        explanation: "Price trades the gap between result and expectation. 20% against an expected 30% is a miss.",
+      },
+      {
+        prompt: "A stock runs 40% into earnings on hype, then reports exactly in-line. Common outcome?",
+        options: ["Another big rally", "Sell-off — the news was already priced in", "Delisting", "Guaranteed +10%"],
+        correctIndex: 1,
+        explanation: "'Buy the rumour, sell the news' — in-line results give buyers nothing new after a hype run-up.",
+      },
+      {
+        prompt: "You control a $10,000 position on $1,000 margin (10×). The asset moves 5% against you. Impact on margin?",
+        options: ["Lose 5%", "Lose ~50% — 5% × 10×", "No impact", "Lose $5"],
+        correctIndex: 1,
+        explanation: "5% of $10,000 = $500 = half of your $1,000 margin. Leverage multiplies the move against your collateral.",
+      },
+      {
+        prompt: "10× leverage, no stop, a 12% overnight gap against you. Result?",
+        options: ["Small recoverable loss", "Liquidation — margin wiped", "Broker covers it", "Trade pauses"],
+        correctIndex: 1,
+        explanation: "12% at 10× is a 120% hit to margin — past the maintenance floor. Force-closed at market, margin gone.",
+      },
+      {
+        prompt: "The safer way to use leverage is to…",
+        options: [
+          "Max it out to grow faster",
+          "Fix risk-per-trade (e.g. 1%) and let leverage only free up cash, never enlarge the loss at your stop",
+          "Drop stops so you're never shaken out",
+          "Only use it on sure things",
+        ],
+        correctIndex: 1,
+        explanation: "Size from your stop and a fixed dollar risk. Then leverage reduces cash tied up without increasing what you lose when wrong.",
+      },
+    ],
+  },
 };

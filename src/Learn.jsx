@@ -11,7 +11,7 @@ import { Gloss } from "./glossary";
 const GRADABLE = new Set(["question", "build_candle", "mark_chart", "compare"]);
 import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
 
-const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠" };
+const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠", 6: "💰" };
 
 function itemTitle(item) {
   if (item.type === "lesson") return LESSONS[item.id]?.title || item.id;

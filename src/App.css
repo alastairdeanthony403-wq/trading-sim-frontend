@@ -656,6 +656,32 @@ body {
 .sent-dot.sent-1 { background: var(--green); }
 .sent-dot.sent--1 { background: var(--red); }
 
+/* ── Scam debrief (Phase E step 3) ───────────────────────────────────── */
+.scam-debrief {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  text-align: left;
+}
+.scam-debrief.scam-bad { border-color: var(--red); background: rgba(255, 95, 92, 0.08); }
+.scam-debrief.scam-good { border-color: var(--green); background: rgba(46, 242, 160, 0.07); }
+.scam-debrief.scam-ok { border-color: var(--amber); background: rgba(255, 194, 88, 0.07); }
+.scam-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.scam-bad .scam-title { color: var(--red); }
+.scam-good .scam-title { color: var(--green); }
+.scam-ok .scam-title { color: var(--amber); }
+.scam-lede { font-family: var(--mono); font-size: 12.5px; color: var(--text); line-height: 1.55; margin-bottom: 12px; }
+.scam-anatomy { margin: 6px 0 0; padding-left: 18px; }
+.scam-anatomy li { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 4px; }
+
 .results.blown .blown-title {
   color: var(--red);
   font-size: 34px;

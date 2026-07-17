@@ -52,6 +52,11 @@ body {
   flex-direction: column;
 }
 
+/* This app is always dark, but the shared index.css sets a near-black heading
+   colour (--text-h) that flips with the OS theme and disappears on our
+   background. Force every in-app heading to the dark-theme text colour. */
+.app h1, .app h2, .app h3 { color: var(--text); }
+
 /* ============ HEADER / STATUS BAR ============ */
 
 .header {
@@ -279,7 +284,7 @@ body {
   width: 100%;
 }
 
-.howto h2, .results h2, .lesson-player h2, .learn-header h2 {
+.howto h2, .results h2, .lesson-player h2, .learn-header h2, .compete h2 {
   font-family: var(--display);
   font-size: 22px;
   letter-spacing: 0.5px;
@@ -578,7 +583,7 @@ body {
   color: var(--amber);
   padding: 4px 16px 12px;
 }
-.scenario-regime {
+.scenario-regime, .badge-news, .badge-scam {
   display: inline-block;
   margin: 4px 16px 12px;
   padding: 3px 8px;
@@ -586,10 +591,22 @@ body {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  border-radius: 3px;
+}
+.scenario-regime {
   color: var(--cyan);
   background: var(--cyan-soft);
   border: 1px solid rgba(69, 216, 255, 0.35);
-  border-radius: 3px;
+}
+.badge-news {
+  color: var(--amber);
+  background: rgba(255, 194, 88, 0.12);
+  border: 1px solid rgba(255, 194, 88, 0.4);
+}
+.badge-scam {
+  color: var(--red);
+  background: rgba(255, 95, 92, 0.12);
+  border: 1px solid rgba(255, 95, 92, 0.4);
 }
 
 .fm-banner {

@@ -21,8 +21,16 @@ import {
   submitMission,
   getReplay,
   getCoachLlm,
+  getCurrentContest,
+  startContest,
+  submitContest,
+  getContestLeaderboard,
+  createLeague,
+  joinLeague,
+  getMyLeagues,
+  getLeagueLeaderboard,
 } from "./api";
-import { getUserId } from "./user";
+import { getUserId, getDisplayName, setDisplayName } from "./user";
 import { addXp } from "./xp";
 import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
@@ -68,6 +76,18 @@ export default function App() {
   const [events, setEvents] = useState([]);                // scripted news events
   const [scamDebrief, setScamDebrief] = useState(null);    // pump-and-dump debrief
   const [voices, setVoices] = useState([]);                // character voices at decision points
+  // ── Competitions (Phase G) ──
+  const [contestMode, setContestMode] = useState(false);   // reveal-driven contest playback
+  const [contest, setContest] = useState(null);            // current weekly contest
+  const [contestBoard, setContestBoard] = useState([]);
+  const [contestResult, setContestResult] = useState(null);
+  const [leagues, setLeagues] = useState([]);
+  const [leagueBoard, setLeagueBoard] = useState(null);    // { league, rows }
+  const [nameInput, setNameInput] = useState(getDisplayName());
+  const [savedName, setSavedName] = useState(getDisplayName());
+  const [joinCode, setJoinCode] = useState("");
+  const [leagueName, setLeagueName] = useState("");
+  const contestBarCountRef = useRef(0);
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -204,9 +224,9 @@ export default function App() {
     }
   }, [visibleCount, allBars]);
 
-  // playback loop
+  // playback loop (normal sessions — contest sessions use the reveal-driven loop)
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || contestMode) return;
     if (visibleCount >= allBars.length) {
       setPlaying(false);
       return;
@@ -215,7 +235,7 @@ export default function App() {
       setVisibleCount((c) => Math.min(c + 1, allBars.length));
     }, speed.ms);
     return () => clearTimeout(id);
-  }, [playing, visibleCount, allBars, speed]);
+  }, [playing, contestMode, visibleCount, allBars, speed]);
 
   // ---- server-authoritative order processing ----
   const refreshPositions = useCallback(async () => {
@@ -281,7 +301,7 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || contestMode) return;
     const seq = allBars[visibleCount - 1]?.bar_sequence;
     if (seq == null) return;
     advanceTargetRef.current = seq;
@@ -289,7 +309,62 @@ export default function App() {
     if (positionsRef.current.some((p) => p.status === "open" || p.status === "pending")) {
       runAdvance();
     }
-  }, [visibleCount, allBars, session, runAdvance]);
+  }, [visibleCount, allBars, session, contestMode, runAdvance]);
+
+  // ---- contest reveal-driven playback (server is the clock, one bar/tick) ----
+  const finishContest = useCallback(async () => {
+    const dn = getDisplayName();
+    let submit = null;
+    if (dn && contest) {
+      try { submit = await submitContest(contest.contest_id, session.session_id, getUserId(), dn); }
+      catch { submit = null; }
+    } else if (session) {
+      try { await endSession(session.session_id); } catch { /* ignore */ }
+    }
+    setContestResult(submit);
+    if (contest) {
+      try { setContestBoard(await getContestLeaderboard(contest.contest_id)); } catch { /* ignore */ }
+    }
+    setScreen("contestResult");
+  }, [contest, session]);
+
+  const contestTick = useCallback(async () => {
+    if (advanceInFlightRef.current || !session) return;
+    advanceInFlightRef.current = true;
+    try {
+      const res = await advanceSession(session.session_id, 1e9);
+      if (Array.isArray(res.positions)) setPositions(res.positions);
+      setMarginCall(!!res.margin_call);
+      setConcentrated(!!res.concentrated);
+      if (Array.isArray(res.voices)) setVoices(res.voices);
+      const served = res.bars_served ?? 0;
+      const bars = await getBars(session.session_id, served);
+      setAllBars(bars);
+      setVisibleCount(bars.length);
+      const closed = (res.events || []).filter((e) => e.event === "closed" || e.event === "liquidated");
+      if (closed.length) {
+        const last = closed[closed.length - 1];
+        setLastFill({ reason: last.reason || "liquidation", bar: last.bar_sequence, pnl: last.pnl });
+      }
+      const done = res.status === "blown" || res.status === "complete"
+                   || served >= contestBarCountRef.current - 1;
+      if (done && !endedRef.current) {
+        endedRef.current = true;
+        setPlaying(false);
+        await finishContest();
+      }
+    } catch {
+      /* transient — next tick retries */
+    } finally {
+      advanceInFlightRef.current = false;
+    }
+  }, [session, finishContest]);
+
+  useEffect(() => {
+    if (!playing || !contestMode || endedRef.current) return;
+    const id = setTimeout(() => { contestTick(); }, speed.ms);
+    return () => clearTimeout(id);
+  }, [playing, contestMode, visibleCount, speed, contestTick]);
 
   // ---- draw price lines for every working/open order ----
   useEffect(() => {
@@ -334,6 +409,7 @@ export default function App() {
     } catch { setEvents([]); }
     setScamDebrief(null);
     setVoices([]);
+    setContestMode(false);
     setSession(s);
     setAllBars(bars);
     setVisibleCount(Math.min(30, bars.length));
@@ -368,6 +444,67 @@ export default function App() {
     setActiveIsDaily(!!isDaily);
     await handleSelectScenario(scenarioId, true);
   }, [scenarios, handleSelectScenario]);
+
+  // ── Competitions ──
+  const openCompete = useCallback(async () => {
+    setOrderError("");
+    setScreen("compete");
+    try {
+      const c = await getCurrentContest(getUserId());
+      setContest(c);
+      setContestBoard(await getContestLeaderboard(c.contest_id));
+    } catch { /* ignore */ }
+    try { setLeagues(await getMyLeagues(getUserId())); } catch { setLeagues([]); }
+    setLeagueBoard(null);
+  }, []);
+
+  const startContestPlay = useCallback(async () => {
+    if (!contest) return;
+    setLoading(true);
+    const s = await startContest(getUserId());
+    contestBarCountRef.current = contest.bar_count || 0;
+    const bars = await getBars(s.session_id, s.bars_served);
+    try {
+      const t = await getTools(getUserId());
+      setUnlockedTools(t.unlocked_tools || []);
+      setToolLevel(t.tool_level || 1);
+    } catch { setUnlockedTools([]); setToolLevel(1); }
+    setSession({ session_id: s.session_id, scenario_id: s.scenario_id, is_contest: true, mode: "standard" });
+    setContestMode(true);
+    setAllBars(bars);
+    setVisibleCount(bars.length);
+    setPositions([]);
+    setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
+    setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setMarginCall(false); setConcentrated(false);
+    setEvents([]); setScamDebrief(null); setVoices([]);
+    setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
+    endedRef.current = false; setLastFill(null); setResults(null); setContestResult(null);
+    setScreen("playing");
+    setLoading(false);
+  }, [contest]);
+
+  const handleCreateLeague = async () => {
+    const dn = getDisplayName();
+    if (!leagueName.trim() || !dn) return;
+    await createLeague(leagueName.trim(), getUserId(), dn);
+    setLeagueName("");
+    setLeagues(await getMyLeagues(getUserId()));
+  };
+
+  const handleJoinLeague = async () => {
+    const dn = getDisplayName();
+    if (!joinCode.trim() || !dn) return;
+    const res = await joinLeague(joinCode.trim(), getUserId(), dn);
+    setJoinCode("");
+    if (res && res.error) { setOrderError(res.error); return; }
+    setLeagues(await getMyLeagues(getUserId()));
+  };
+
+  const openLeagueBoard = async (league) => {
+    const rows = await getLeagueLeaderboard(league.league_id);
+    setLeagueBoard({ league, rows });
+  };
 
   const currentBar = allBars[visibleCount - 1];
 
@@ -499,6 +636,9 @@ export default function App() {
             }}>
               Career
             </button>
+            <button className="menu-btn" onClick={openCompete}>
+              Compete
+            </button>
             <button className="menu-btn" onClick={openProgress}>
               Your progress
             </button>
@@ -545,6 +685,161 @@ export default function App() {
           <button className="menu-btn" onClick={() => setScreen("menu")}>
             Back to menu
           </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "compete") {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+        </header>
+        <main className="compete">
+          <h2>Compete</h2>
+
+          <div className="name-card">
+            <label className="name-label">Display name (your leaderboard identity)</label>
+            <div className="name-row">
+              <input className="text-input" value={nameInput} maxLength={60}
+                     placeholder="e.g. NightDesk"
+                     onChange={(e) => setNameInput(e.target.value)} />
+              <button className="primary-btn" onClick={() => { setDisplayName(nameInput); setSavedName(nameInput.trim().slice(0, 60)); }}>
+                Save
+              </button>
+            </div>
+            <p className="muted small">
+              {savedName ? `Entering as "${savedName}".` : "Set a name to post scored entries — without one you can still practise."}
+            </p>
+          </div>
+
+          {contest && (
+            <div className="contest-card">
+              <div className="contest-head">
+                <div>
+                  <div className="section-label">THIS WEEK'S CHALLENGE</div>
+                  <div className="contest-title">{contest.title}</div>
+                  <div className="muted small">
+                    Week of {contest.week_start} · {contest.entry_count} entries
+                    {contest.your_entry ? ` · your score ${contest.your_entry.composite_score}` : ""}
+                  </div>
+                </div>
+                <button className="primary-btn" onClick={startContestPlay} disabled={loading}>
+                  {contest.your_entry ? "Practise again" : "Play the challenge"}
+                </button>
+              </div>
+              {contest.your_entry && (
+                <p className="muted small">You've already posted a scored entry — replays are practice only (one scored attempt per week).</p>
+              )}
+              <div className="section-label" style={{ marginTop: 14 }}>LEADERBOARD</div>
+              {contestBoard.length === 0 && <p className="muted small">No entries yet — be the first.</p>}
+              {contestBoard.length > 0 && (
+                <table className="board-table">
+                  <tbody>
+                    {contestBoard.map((e) => (
+                      <tr key={e.user_id} className={e.display_name === savedName ? "board-me" : ""}>
+                        <td className="board-rank">{e.rank}</td>
+                        <td>{e.display_name}</td>
+                        <td className="board-score">{e.composite_score}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          <div className="leagues-card">
+            <div className="section-label">PRIVATE LEAGUES</div>
+            <div className="league-actions">
+              <div className="league-action">
+                <input className="text-input" value={leagueName} maxLength={80}
+                       placeholder="New league name"
+                       onChange={(e) => setLeagueName(e.target.value)} />
+                <button className="menu-btn" onClick={handleCreateLeague} disabled={!savedName}>Create</button>
+              </div>
+              <div className="league-action">
+                <input className="text-input" value={joinCode} maxLength={12}
+                       placeholder="Invite code"
+                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())} />
+                <button className="menu-btn" onClick={handleJoinLeague} disabled={!savedName}>Join</button>
+              </div>
+            </div>
+            {!savedName && <p className="muted small">Set a display name above to create or join a league.</p>}
+            {orderError && <p className="order-error">{orderError}</p>}
+
+            {leagues.length > 0 && (
+              <div className="league-list">
+                {leagues.map((l) => (
+                  <button key={l.league_id} className="league-item" onClick={() => openLeagueBoard(l)}>
+                    <span className="league-item-name">{l.name}</span>
+                    <span className="league-item-meta">code {l.invite_code} · {l.member_count} members</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {leagueBoard && (
+              <div className="league-board">
+                <div className="section-label" style={{ marginTop: 12 }}>
+                  {leagueBoard.league.name} — SEASON STANDINGS
+                </div>
+                <table className="board-table">
+                  <tbody>
+                    {leagueBoard.rows.map((r) => (
+                      <tr key={r.user_id} className={r.display_name === getDisplayName() ? "board-me" : ""}>
+                        <td className="board-rank">{r.rank}</td>
+                        <td>{r.display_name}</td>
+                        <td className="muted small">{r.contests_played} played</td>
+                        <td className="board-score">{r.total_score}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "contestResult") {
+    const r = contestResult;
+    return (
+      <div className="app">
+        <header className="header"><div className="logo">TAPE//RUN</div></header>
+        <main className="results">
+          <h2>Contest run complete</h2>
+          {r && r.entry ? (
+            <div className="results-grid" style={{ marginBottom: 16 }}>
+              <Stat label="Your score" value={r.entry.composite_score} highlight />
+              <Stat label="Rank" value={`#${r.rank}`} />
+            </div>
+          ) : (
+            <p className="muted">
+              {savedName ? "Entry recorded." : "Practice run — set a display name on the Compete screen to post a scored entry."}
+            </p>
+          )}
+          {r && r.already_entered && (
+            <p className="muted small">You'd already posted a scored entry this week — this run was practice.</p>
+          )}
+          <div className="section-label" style={{ marginTop: 10 }}>LEADERBOARD</div>
+          <table className="board-table">
+            <tbody>
+              {contestBoard.map((e) => (
+                <tr key={e.user_id} className={e.display_name === savedName ? "board-me" : ""}>
+                  <td className="board-rank">{e.rank}</td>
+                  <td>{e.display_name}</td>
+                  <td className="board-score">{e.composite_score}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button className="primary-btn" style={{ marginTop: 18 }} onClick={openCompete}>Back to Compete</button>
+          <button className="menu-btn" style={{ marginLeft: 12 }} onClick={() => setScreen("menu")}>Menu</button>
         </main>
       </div>
     );
@@ -1200,8 +1495,10 @@ export default function App() {
           <button className="short-btn" onClick={() => handleOpenTrade("short")} disabled={!canOpenNew}>
             SHORT
           </button>
-          <button className="end-btn" onClick={handleEndSession}>
-            End session
+          <button className="end-btn" onClick={contestMode
+            ? async () => { if (!endedRef.current) { endedRef.current = true; setPlaying(false); await finishContest(); } }
+            : handleEndSession}>
+            {contestMode ? "Submit run" : "End session"}
           </button>
         </div>
 

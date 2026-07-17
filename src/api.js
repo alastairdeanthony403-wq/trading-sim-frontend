@@ -159,6 +159,64 @@ export async function submitMission(missionId, sessionId, userId, isDaily = fals
   return res.json();
 }
 
+// ── Competitions & leagues (Phase G) ────────────────────────────────────
+export async function getCurrentContest(userId) {
+  const q = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
+  const res = await fetch(`${API_BASE}/contests/current${q}`);
+  return res.json();
+}
+
+export async function startContest(userId) {
+  const res = await fetch(`${API_BASE}/contests/current/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, starting_balance: 10000 }),
+  });
+  return res.json();
+}
+
+export async function submitContest(contestId, sessionId, userId, displayName) {
+  const res = await fetch(`${API_BASE}/contests/${contestId}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, user_id: userId, display_name: displayName }),
+  });
+  return res.json();
+}
+
+export async function getContestLeaderboard(contestId) {
+  const res = await fetch(`${API_BASE}/contests/${contestId}/leaderboard`);
+  return res.json();
+}
+
+export async function createLeague(name, userId, displayName) {
+  const res = await fetch(`${API_BASE}/leagues`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, user_id: userId, display_name: displayName }),
+  });
+  return res.json();
+}
+
+export async function joinLeague(inviteCode, userId, displayName) {
+  const res = await fetch(`${API_BASE}/leagues/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invite_code: inviteCode, user_id: userId, display_name: displayName }),
+  });
+  return res.json();
+}
+
+export async function getMyLeagues(userId) {
+  const res = await fetch(`${API_BASE}/leagues/mine?user_id=${encodeURIComponent(userId)}`);
+  return res.json();
+}
+
+export async function getLeagueLeaderboard(leagueId) {
+  const res = await fetch(`${API_BASE}/leagues/${leagueId}/leaderboard`);
+  return res.json();
+}
+
 export async function markComplete(userId, itemId) {
   const res = await fetch(`${API_BASE}/progress/${userId}/complete`, {
     method: "POST",

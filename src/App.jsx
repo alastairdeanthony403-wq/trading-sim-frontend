@@ -42,6 +42,37 @@ const SPEEDS = [
   { label: "Max", ms: 40 },
 ];
 
+// Multi-timeframe (Phase 2): minutes per bar, mirrored from the backend
+// (bar_provider.TF_MINUTES). Intraday scenarios store a 1-minute base series and
+// the chart aggregates it to any coarser timeframe for display.
+const TF_MINUTES = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240 };
+const tfMult = (tf) => TF_MINUTES[tf] || 1;
+
+// Aggregate a base (1m) bar slice into `mult`-minute candles for display. Same
+// bucketing the server uses: bucket i = floor(base_seq / mult); open=first,
+// high=max, low=min, close=last. The final bucket may be partial (the forming
+// candle) — it only ever contains already-revealed bars, so nothing leaks.
+function aggregateBars(bars, mult) {
+  if (mult <= 1) return bars;
+  const buckets = new Map();
+  for (const b of bars) {
+    const idx = Math.floor(b.bar_sequence / mult);
+    (buckets.get(idx) || buckets.set(idx, []).get(idx)).push(b);
+  }
+  const out = [];
+  for (const idx of [...buckets.keys()].sort((a, z) => a - z)) {
+    const g = buckets.get(idx);
+    out.push({
+      bar_sequence: idx,
+      open: g[0].open,
+      high: Math.max(...g.map((x) => x.high)),
+      low: Math.min(...g.map((x) => x.low)),
+      close: g[g.length - 1].close,
+    });
+  }
+  return out;
+}
+
 // Friendly labels for synthetic-market regime tags (Phase E).
 const REGIME_LABELS = {
   trend_up: "Uptrend", trend_down: "Downtrend", range: "Range",
@@ -63,6 +94,12 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [allBars, setAllBars] = useState([]);
   const [visibleCount, setVisibleCount] = useState(1);
+  // Multi-timeframe: timeframes this scenario can be viewed on (intraday → many),
+  // the currently selected one, and how many base (1m) bars a playback tick reveals
+  // (the anchor timeframe's minutes for intraday, 1 otherwise).
+  const [timeframes, setTimeframes] = useState([]);
+  const [chartTf, setChartTf] = useState(null);
+  const [playbackStep, setPlaybackStep] = useState(1);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(SPEEDS[0]);
   const [positions, setPositions] = useState([]);   // server-authoritative: all trades this session
@@ -206,15 +243,20 @@ export default function App() {
 
   const hasFitRef = useRef(false);
 
-  // reset fit tracking when entering a new session
+  // reset fit tracking when entering a new session OR switching timeframe, so the
+  // chart re-frames once for the new view (but not on every revealed bar).
   useEffect(() => {
     hasFitRef.current = false;
-  }, [session]);
+  }, [session, chartTf]);
 
-  // push visible bars to chart whenever visibleCount changes
+  // push visible bars to chart whenever visibleCount / timeframe changes.
+  // allBars is always the BASE (1m for intraday) series; for a coarser timeframe
+  // we aggregate the revealed slice for display. Trades stay keyed to the base
+  // bar_sequence, so the order engine is untouched.
   useEffect(() => {
     if (!seriesRef.current || allBars.length === 0) return;
-    const slice = allBars.slice(0, visibleCount).map((b) => ({
+    const revealed = allBars.slice(0, visibleCount);
+    const slice = aggregateBars(revealed, tfMult(chartTf)).map((b) => ({
       time: b.bar_sequence,
       open: b.open,
       high: b.high,
@@ -226,7 +268,7 @@ export default function App() {
       chartRef.current?.timeScale().fitContent();
       hasFitRef.current = true;
     }
-  }, [visibleCount, allBars]);
+  }, [visibleCount, allBars, chartTf]);
 
   // playback loop (normal sessions — contest sessions use the reveal-driven loop)
   useEffect(() => {
@@ -236,10 +278,10 @@ export default function App() {
       return;
     }
     const id = setTimeout(() => {
-      setVisibleCount((c) => Math.min(c + 1, allBars.length));
+      setVisibleCount((c) => Math.min(c + playbackStep, allBars.length));
     }, speed.ms);
     return () => clearTimeout(id);
-  }, [playing, contestMode, visibleCount, allBars, speed]);
+  }, [playing, contestMode, visibleCount, allBars, speed, playbackStep]);
 
   // ---- server-authoritative order processing ----
   const refreshPositions = useCallback(async () => {
@@ -416,6 +458,14 @@ export default function App() {
     setContestMode(false);
     setSession(s);
     setAllBars(bars);
+    // Multi-timeframe: intraday scenarios advertise several timeframes and open on
+    // their anchor (e.g. 15m); each playback tick then reveals one anchor candle's
+    // worth of base (1m) bars. Single-timeframe scenarios keep 1-bar steps.
+    const tfs = s.available_timeframes || [];
+    const anchor = s.anchor_tf || s.base_timeframe || (tfs[0] || null);
+    setTimeframes(tfs.length > 1 ? tfs : []);
+    setChartTf(anchor);
+    setPlaybackStep(tfs.length > 1 && s.anchor_tf ? tfMult(s.anchor_tf) : 1);
     // Rule 0: show the pre-playback history window (server-provided) on load,
     // then playback reveals the rest one bar at a time.
     setVisibleCount(Math.min(s.history_bars || 30, bars.length));
@@ -478,6 +528,7 @@ export default function App() {
     setSession({ session_id: s.session_id, scenario_id: s.scenario_id, is_contest: true, mode: "standard" });
     setContestMode(true);
     setAllBars(bars);
+    setTimeframes([]); setChartTf(null); setPlaybackStep(1);   // contests are single-timeframe
     setVisibleCount(bars.length);
     setPositions([]);
     setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
@@ -1423,6 +1474,19 @@ export default function App() {
           <button className="speed-btn" onClick={() => setPlaying((p) => !p)}>
             {playing ? "Pause" : "Play"}
           </button>
+          {timeframes.length > 1 && (
+            <div className="tf-group" title="Chart timeframe">
+              {timeframes.map((tf) => (
+                <button
+                  key={tf}
+                  className={chartTf === tf ? "tf-btn active" : "tf-btn"}
+                  onClick={() => setChartTf(tf)}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="progress">
             {visibleCount} / {allBars.length}
           </div>

@@ -416,7 +416,9 @@ export default function App() {
     setContestMode(false);
     setSession(s);
     setAllBars(bars);
-    setVisibleCount(Math.min(30, bars.length));
+    // Rule 0: show the pre-playback history window (server-provided) on load,
+    // then playback reveals the rest one bar at a time.
+    setVisibleCount(Math.min(s.history_bars || 30, bars.length));
     setPositions([]);
     setOrderType("market");
     setEntryPriceInput("");

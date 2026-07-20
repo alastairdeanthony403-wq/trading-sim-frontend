@@ -100,6 +100,11 @@ export default function App() {
   const [timeframes, setTimeframes] = useState([]);
   const [chartTf, setChartTf] = useState(null);
   const [playbackStep, setPlaybackStep] = useState(1);
+  // Intraday trading-session context (Phase 4): the session bands + minutes-per-day
+  // let us show which session (Open/London/…) the current bar sits in. Live and
+  // non-leaking — the time of day is always known.
+  const [sessionBands, setSessionBands] = useState([]);
+  const [barsPerDay, setBarsPerDay] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(SPEEDS[0]);
   const [positions, setPositions] = useState([]);   // server-authoritative: all trades this session
@@ -466,6 +471,8 @@ export default function App() {
     setTimeframes(tfs.length > 1 ? tfs : []);
     setChartTf(anchor);
     setPlaybackStep(tfs.length > 1 && s.anchor_tf ? tfMult(s.anchor_tf) : 1);
+    setSessionBands(s.session_bands || []);
+    setBarsPerDay(s.bars_per_day || 0);
     // Rule 0: show the pre-playback history window (server-provided) on load,
     // then playback reveals the rest one bar at a time.
     setVisibleCount(Math.min(s.history_bars || 30, bars.length));
@@ -529,6 +536,7 @@ export default function App() {
     setContestMode(true);
     setAllBars(bars);
     setTimeframes([]); setChartTf(null); setPlaybackStep(1);   // contests are single-timeframe
+    setSessionBands([]); setBarsPerDay(0);
     setVisibleCount(bars.length);
     setPositions([]);
     setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
@@ -564,6 +572,16 @@ export default function App() {
   };
 
   const currentBar = allBars[visibleCount - 1];
+
+  // Which trading session the current bar sits in (intraday only). The session
+  // bands are fractions of the day; map the bar's within-day position onto them.
+  const currentSession = (() => {
+    if (!sessionBands.length || !barsPerDay || !currentBar) return null;
+    const frac = (currentBar.bar_sequence % barsPerDay) / barsPerDay;
+    const band = sessionBands.find((b) => frac >= b.start && frac < b.end)
+      || sessionBands[sessionBands.length - 1];
+    return band ? band.name : null;
+  })();
 
   const handleOpenTrade = async (direction) => {
     if (!currentBar) return;
@@ -1485,6 +1503,11 @@ export default function App() {
                   {tf}
                 </button>
               ))}
+            </div>
+          )}
+          {currentSession && (
+            <div className="session-chip" title="Current trading session">
+              <span className="session-dot" /> {currentSession}
             </div>
           )}
           <div className="progress">

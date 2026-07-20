@@ -2,8 +2,10 @@ import { useEffect, useRef } from "react";
 import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight-charts";
 
 // Post-session replay: full scenario candles with the player's entries/exits
-// as markers and their SL/TP as price lines.
-export default function ReplayChart({ bars, markers, trades }) {
+// as markers and their SL/TP as price lines. Phase 3 also overlays the market
+// STRUCTURE the coach read (server-derived, post-session only): horizontal
+// support/resistance levels and the liquidity sweeps that hunted stops.
+export default function ReplayChart({ bars, markers, trades, structure }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function ReplayChart({ bars, markers, trades }) {
       time: b.bar_sequence, open: b.open, high: b.high, low: b.low, close: b.close,
     })));
 
-    const mk = (markers || []).map((m) => ({
+    const tradeMarkers = (markers || []).map((m) => ({
       time: m.bar,
       position: m.kind === "entry" ? "belowBar" : "aboveBar",
       color: m.kind === "entry"
@@ -42,8 +44,36 @@ export default function ReplayChart({ bars, markers, trades }) {
       text: m.kind === "entry"
         ? (m.direction === "long" ? "LONG" : "SHORT")
         : (m.reason ? m.reason.replace("_", " ") : "exit"),
-    })).sort((a, b) => a.time - b.time);
+    }));
+
+    // Phase 3: liquidity-sweep markers (a wick hunted stops beyond a level).
+    // Show only the most significant sweeps (deepest penetration) to keep the
+    // review readable — the full set lives server-side and feeds the coach.
+    const sweepMarkers = [...((structure && structure.sweeps) || [])]
+      .sort((a, b) => (b.penetration || 0) - (a.penetration || 0))
+      .slice(0, 6)
+      .map((s) => ({
+        time: s.bar_sequence,
+        position: s.side === "high" ? "aboveBar" : "belowBar",
+        color: "#e0a33e",
+        shape: s.side === "high" ? "arrowDown" : "arrowUp",
+        text: "sweep",
+      }));
+
+    const mk = [...tradeMarkers, ...sweepMarkers].sort((a, b) => a.time - b.time);
     createSeriesMarkers(series, mk);
+
+    // Phase 3: the strongest support/resistance levels the market revisited
+    // (top few by touch count — sorted strongest-first by the server).
+    ((structure && structure.levels) || []).slice(0, 5).forEach((lv) => {
+      const color = lv.kind === "support" ? "#3fb68b"
+        : lv.kind === "resistance" ? "#d9534f" : "#7f8fa6";
+      series.createPriceLine({
+        price: lv.price, color, lineWidth: 1, lineStyle: 3,
+        axisLabelVisible: false,
+        title: `${lv.kind === "flip" ? "S/R" : lv.kind.slice(0, 3).toUpperCase()}·${lv.touches}`,
+      });
+    });
 
     (trades || []).forEach((t) => {
       if (t.stop_loss != null)
@@ -56,7 +86,7 @@ export default function ReplayChart({ bars, markers, trades }) {
     const onResize = () => chart.applyOptions({ width: containerRef.current.clientWidth });
     window.addEventListener("resize", onResize);
     return () => { window.removeEventListener("resize", onResize); chart.remove(); };
-  }, [bars, markers, trades]);
+  }, [bars, markers, trades, structure]);
 
   return <div className="chart-container" ref={containerRef} />;
 }

@@ -456,6 +456,29 @@ body {
   background: var(--green-soft);
 }
 
+/* Intraday trading-session chip (Phase 4) */
+.session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.session-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, var(--green));
+  box-shadow: 0 0 8px var(--accent, var(--green));
+}
+
 .progress {
   margin-left: auto;
   font-size: 12px;

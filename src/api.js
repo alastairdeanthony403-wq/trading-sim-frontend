@@ -27,6 +27,11 @@ export async function getBars(sessionId, upTo) {
   return res.json();
 }
 
+export async function getReference(sessionId) {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/reference`);
+  return res.json();
+}
+
 export async function openTrade(sessionId, {
   direction, size, barSequence, stopLoss, takeProfit,
   orderType = "market", entryOrderPrice, trailDistance, leverage,

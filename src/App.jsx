@@ -1076,11 +1076,22 @@ export default function App() {
 
           <div className="pm-section">
             <h3 className="section-label">Trade by trade</h3>
+            {replayData.setup_grades && replayData.setup_grades.total > 0 && (
+              <div className="setup-summary">
+                Setup quality:
+                {["A", "B", "C"].map((g) => (
+                  <span key={g} className={`setup-badge grade-${g}`}>
+                    {g} × {replayData.setup_grades[g]}
+                  </span>
+                ))}
+                <span className="setup-hint">graded on trend · location · reward-for-risk · defined risk</span>
+              </div>
+            )}
             <div style={{ overflowX: "auto" }}>
               <table className="pm-table replay-table">
                 <thead>
                   <tr>
-                    <th>Dir</th><th>Size</th><th>Entry</th><th>Exit</th>
+                    <th>Dir</th><th>Setup</th><th>Size</th><th>Entry</th><th>Exit</th>
                     <th>Planned R</th><th>Achieved R</th><th>MFE</th><th>MAE</th><th>Reason</th><th>P&amp;L</th>
                   </tr>
                 </thead>
@@ -1088,6 +1099,18 @@ export default function App() {
                   {replayData.trades.map((t, i) => (
                     <tr key={i}>
                       <td className={`pos-${t.direction}`}>{t.direction.toUpperCase()}</td>
+                      <td>
+                        {t.setup ? (
+                          <span
+                            className={`setup-badge grade-${t.setup.grade}`}
+                            title={(t.setup.factors || [])
+                              .map((f) => `${f.delta > 0 ? "+" : ""}${f.delta} ${f.note}`)
+                              .join("\n")}
+                          >
+                            {t.setup.grade}
+                          </span>
+                        ) : "—"}
+                      </td>
                       <td>{t.size}</td>
                       <td>{t.entry_price?.toFixed(2)}</td>
                       <td>{t.exit_price?.toFixed(2)}</td>

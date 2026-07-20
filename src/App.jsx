@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, CandlestickSeries } from "lightweight-charts";
+import { createChart, CandlestickSeries, LineSeries } from "lightweight-charts";
 import {
   listScenarios,
   startSession,
   getBars,
+  getReference,
   openTrade,
   closeTrade,
   advanceSession,
@@ -105,6 +106,9 @@ export default function App() {
   // non-leaking — the time of day is always known.
   const [sessionBands, setSessionBands] = useState([]);
   const [barsPerDay, setBarsPerDay] = useState(0);
+  // Correlated benchmark line (Phase 6): a reference instrument the asset moves
+  // with, for reading relative strength. [] when the scenario has none.
+  const [reference, setReference] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(SPEEDS[0]);
   const [positions, setPositions] = useState([]);   // server-authoritative: all trades this session
@@ -152,6 +156,7 @@ export default function App() {
 
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
+  const refSeriesRef = useRef(null);             // benchmark overlay line (Phase 6)
   const containerRef = useRef(null);
   const priceLinesRef = useRef([]);              // active chart lines
   const advanceInFlightRef = useRef(false);      // single in-flight /advance
@@ -232,8 +237,17 @@ export default function App() {
       wickDownColor: "#d9534f",
     });
 
+    // Benchmark overlay (Phase 6): a faint correlated line on its own hidden
+    // scale so its absolute level doesn't distort the price axis.
+    const refSeries = chart.addSeries(LineSeries, {
+      color: "#6ea8fe", lineWidth: 1, priceScaleId: "ref",
+      lastValueVisible: false, priceLineVisible: false,
+    });
+    chart.priceScale("ref").applyOptions({ visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } });
+
     chartRef.current = chart;
     seriesRef.current = series;
+    refSeriesRef.current = refSeries;
 
     const handleResize = () => {
       chart.applyOptions({ width: containerRef.current.clientWidth });
@@ -269,11 +283,20 @@ export default function App() {
       close: b.close,
     }));
     seriesRef.current.setData(slice);
+    // Benchmark overlay reveals in lockstep with the candles (Phase 6).
+    if (refSeriesRef.current) {
+      refSeriesRef.current.setData(
+        reference.length
+          ? reference.filter((p) => p.bar_sequence < visibleCount)
+              .map((p) => ({ time: p.bar_sequence, value: p.value }))
+          : []
+      );
+    }
     if (!hasFitRef.current) {
       chartRef.current?.timeScale().fitContent();
       hasFitRef.current = true;
     }
-  }, [visibleCount, allBars, chartTf]);
+  }, [visibleCount, allBars, chartTf, reference]);
 
   // playback loop (normal sessions — contest sessions use the reveal-driven loop)
   useEffect(() => {
@@ -473,6 +496,11 @@ export default function App() {
     setPlaybackStep(tfs.length > 1 && s.anchor_tf ? tfMult(s.anchor_tf) : 1);
     setSessionBands(s.session_bands || []);
     setBarsPerDay(s.bars_per_day || 0);
+    if (s.has_reference) {
+      try { setReference(await getReference(s.session_id)); } catch { setReference([]); }
+    } else {
+      setReference([]);
+    }
     // Rule 0: show the pre-playback history window (server-provided) on load,
     // then playback reveals the rest one bar at a time.
     setVisibleCount(Math.min(s.history_bars || 30, bars.length));
@@ -536,7 +564,7 @@ export default function App() {
     setContestMode(true);
     setAllBars(bars);
     setTimeframes([]); setChartTf(null); setPlaybackStep(1);   // contests are single-timeframe
-    setSessionBands([]); setBarsPerDay(0);
+    setSessionBands([]); setBarsPerDay(0); setReference([]);
     setVisibleCount(bars.length);
     setPositions([]);
     setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
@@ -1225,6 +1253,11 @@ export default function App() {
                 <div className="scenario-bars">
                   {locked ? "Unlocks with career progress" : `${s.bar_count} bars`}
                 </div>
+                {!locked && s.personality && (
+                  <div className="scenario-personality" title={s.personality}>
+                    {s.personality.split(" —")[0]}
+                  </div>
+                )}
                 {!locked && scenarioBadge(s.tags) && (
                   <div className={scenarioBadge(s.tags).cls}>{scenarioBadge(s.tags).label}</div>
                 )}
@@ -1531,6 +1564,11 @@ export default function App() {
           {currentSession && (
             <div className="session-chip" title="Current trading session">
               <span className="session-dot" /> {currentSession}
+            </div>
+          )}
+          {reference.length > 0 && (
+            <div className="session-chip" title="Correlated benchmark instrument">
+              <span className="session-dot bench-dot" /> benchmark
             </div>
           )}
           <div className="progress">

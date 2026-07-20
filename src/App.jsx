@@ -1021,7 +1021,7 @@ export default function App() {
         <main className="results" style={{ maxWidth: 1100 }}>
           <h2>Session review</h2>
 
-          <ReplayChart bars={allBars} markers={replayData.markers} trades={replayData.trades} />
+          <ReplayChart bars={allBars} markers={replayData.markers} trades={replayData.trades} structure={replayData.structure} />
 
           {replayData.coach && replayData.coach.length > 0 && (
             <div className="coach-panel">

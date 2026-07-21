@@ -1,16 +1,21 @@
-# React + Vite
+<div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# TAPE//RUN — Frontend
 
-Currently, two official plugins are available:
+**React 19 + Vite client for the TAPE//RUN trading simulator.**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+</div>
 
-## React Compiler
+This is the browser client: the blind replay simulator (lightweight-charts candles with multi-timeframe playback), the Duolingo-style academy, the career and contest screens, and the post-session analytics review. It talks to the Flask API over REST and holds no market seeds or unrevealed bars — reveal, execution and scoring are all server-authoritative.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+For the full project write-up — the synthetic market engine, seed-only architecture, statistical validation, anti-cheat model, and screenshots — see the **[main README in `trading-sim-backend`](https://github.com/alastairdeanthony403-wq/trading-sim-backend#readme)**.
 
-## Expanding the Oxlint configuration
+## Development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+npm install
+npm run dev      # local dev server (Vite)
+npm run build    # production build
+```
+
+Configure the API base with the `VITE_API_BASE` environment variable (Vite env, read via `import.meta.env`).

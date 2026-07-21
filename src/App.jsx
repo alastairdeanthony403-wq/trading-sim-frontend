@@ -1069,6 +1069,31 @@ export default function App() {
 
           <ReplayChart bars={allBars} markers={replayData.markers} trades={replayData.trades} structure={replayData.structure} />
 
+          {replayData.performance && replayData.performance.trades > 0 && (() => {
+            const p = replayData.performance;
+            const num = (v, suffix = "", dp = 2) => (v == null ? "—" : `${v.toFixed(dp)}${suffix}`);
+            return (
+              <div className="perf-panel">
+                <div className="section-label">Performance</div>
+                <div className="perf-grid">
+                  <Stat label="Trades" value={`${p.trades}`} />
+                  <Stat label="Win rate" value={`${p.win_rate.toFixed(0)}% (${p.wins}/${p.losses})`} />
+                  <Stat label="Expectancy" value={num(p.expectancy_r, "R")} accent={p.expectancy_r != null && p.expectancy_r >= 0} />
+                  <Stat label="Profit factor" value={num(p.profit_factor)} accent={p.profit_factor != null && p.profit_factor >= 1} />
+                  <Stat label="Payoff (win/loss)" value={num(p.payoff_ratio)} />
+                  <Stat label="Avg win / loss" value={`${num(p.avg_win_r, "R")} / ${num(p.avg_loss_r, "R")}`} />
+                  <Stat label="Max drawdown" value={`${p.max_drawdown_pct.toFixed(1)}%`} />
+                  <Stat label="Avg hold" value={`${p.avg_hold_bars.toFixed(0)} bars`} />
+                  <Stat label="Best / worst" value={`$${p.largest_win.toFixed(0)} / $${p.largest_loss.toFixed(0)}`} />
+                </div>
+                <div className="perf-hint">
+                  Expectancy is your average result per trade in R — positive means an edge over many trades,
+                  regardless of this session's P&amp;L. Profit factor ≥ 1 means winners outweighed losers.
+                </div>
+              </div>
+            );
+          })()}
+
           {replayData.coach && replayData.coach.length > 0 && (
             <div className="coach-panel">
               <div className="section-label">Coach</div>

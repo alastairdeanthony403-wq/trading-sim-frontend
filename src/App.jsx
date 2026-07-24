@@ -5,6 +5,10 @@ import {
   startSession,
   getBars,
   getReference,
+  startPaper as apiStartPaper,
+  paperGoLive,
+  paperClock as apiPaperClock,
+  paperEnd,
   startPracticeCheck as apiStartPracticeCheck,
   getPracticeStatus,
   gradePracticeCheck,
@@ -51,6 +55,12 @@ const SPEEDS = [
 // the chart aggregates it to any coarser timeframe for display.
 const TF_MINUTES = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240 };
 const tfMult = (tf) => TF_MINUTES[tf] || 1;
+
+// mm:ss for the paper-trading live countdown.
+function fmtClock(secs) {
+  const s = Math.max(0, Math.round(secs));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 
 // Aggregate a base (1m) bar slice into `mult`-minute candles for display. Same
 // bucketing the server uses: bucket i = floor(base_seq / mult); open=first,
@@ -148,6 +158,14 @@ export default function App() {
   const [scenarioOutcome, setScenarioOutcome] = useState(null); // {check_id, passed, results, goal}
   const practiceCheckRef = useRef(null);
   practiceCheckRef.current = practiceCheck;
+  // Paper trading (Phase 2): timed practice on the intraday engine. paper holds
+  // {session_id, phase, duration, total, warmup}; paperClock is the polled server
+  // clock {phase, bars_served, remaining_seconds, live_done}.
+  const [paper, setPaper] = useState(null);
+  const [paperClk, setPaperClk] = useState(null);
+  const [paperDuration, setPaperDuration] = useState(15);
+  const paperRef = useRef(null);
+  paperRef.current = paper;
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -458,6 +476,93 @@ export default function App() {
     if (!practiceCheck || !session) return;
     getPracticeStatus(session.session_id).then(setPracticeStatus).catch(() => {});
   }, [practiceCheck, session, visibleCount]);
+
+  // ── Paper trading (Phase 2) ───────────────────────────────────────────────
+  const resetTerminal = () => {
+    setPositions([]); setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
+    setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setMarginCall(false); setConcentrated(false);
+    setEvents([]); setScamDebrief(null); setVoices([]);
+    setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
+    setPracticeCheck(null); setPracticeStatus(null);
+    endedRef.current = false; setLastFill(null); setResults(null); setContestResult(null);
+  };
+
+  const startPaperSession = useCallback(async (duration) => {
+    setLoading(true);
+    const s = await apiStartPaper(getUserId(), duration);
+    const bars = await getBars(s.session_id);       // warm-up block, server-capped
+    try {
+      const t = await getTools(getUserId());
+      setUnlockedTools(t.unlocked_tools || []); setToolLevel(t.tool_level || 1);
+    } catch { setUnlockedTools([]); setToolLevel(1); }
+    setSession({ session_id: s.session_id, scenario_id: s.scenario_id, is_contest: false, mode: "paper" });
+    setContestMode(false);
+    setPaper({ session_id: s.session_id, phase: "analysis", duration: s.duration_minutes,
+               total: s.total_bars, warmup: s.warmup_bars });
+    setPaperClk(null);
+    try { localStorage.setItem("tape_run_paper_session", String(s.session_id)); } catch { /* ignore */ }
+    const tfs = s.available_timeframes || [];
+    setTimeframes(tfs.length > 1 ? tfs : []);
+    setChartTf(s.anchor_tf || s.base_timeframe);
+    setPlaybackStep(1); setSessionBands([]); setBarsPerDay(0); setReference([]);
+    setAllBars(bars); setVisibleCount(bars.length);
+    resetTerminal();
+    setScreen("playing");
+    setLoading(false);
+  }, []);
+
+  const finishPaper = useCallback(async () => {
+    const p = paperRef.current;
+    if (!p) return;
+    let res = null;
+    try { res = await paperEnd(p.session_id); } catch { res = null; }
+    try { localStorage.removeItem("tape_run_paper_session"); } catch { /* ignore */ }
+    setResults(res); setLeaderboard([]); setPaper(null); setPaperClk(null);
+    setScreen("results");
+  }, []);
+
+  const paperTick = useCallback(async () => {
+    const p = paperRef.current;
+    if (!p || advanceInFlightRef.current || endedRef.current) return;
+    advanceInFlightRef.current = true;
+    try {
+      const res = await advanceSession(p.session_id, 1e9);   // syncs server clock + fills orders
+      if (Array.isArray(res.positions)) setPositions(res.positions);
+      setMarginCall(!!res.margin_call); setConcentrated(!!res.concentrated);
+      if (Array.isArray(res.voices)) setVoices(res.voices);
+      const served = res.bars_served ?? 0;
+      const bars = await getBars(p.session_id, served);
+      setAllBars(bars); setVisibleCount(bars.length);
+      const closed = (res.events || []).filter((e) => e.event === "closed" || e.event === "liquidated");
+      if (closed.length) {
+        const last = closed[closed.length - 1];
+        setLastFill({ reason: last.reason || "liquidation", bar: last.bar_sequence, pnl: last.pnl });
+      }
+      let clk = null;
+      try { clk = await apiPaperClock(p.session_id); setPaperClk(clk); } catch { /* ignore */ }
+      const done = (clk && clk.live_done) || res.status === "blown" || res.status === "complete";
+      if (done && !endedRef.current) { endedRef.current = true; await finishPaper(); }
+    } catch { /* transient — next tick retries */ } finally {
+      advanceInFlightRef.current = false;
+    }
+  }, [finishPaper]);
+
+  const goLive = useCallback(async () => {
+    const p = paperRef.current;
+    if (!p) return;
+    const clk = await paperGoLive(p.session_id);
+    setPaper((prev) => ({ ...prev, phase: "live" }));
+    setPaperClk(clk);
+  }, []);
+
+  // Paper live drip: poll the server clock ~1s, revealing bars strictly by elapsed
+  // wall-clock. No speed slider — that is what replay is for.
+  useEffect(() => {
+    if (!paper || paper.phase !== "live" || endedRef.current) return;
+    const id = setTimeout(() => { paperTick(); }, 1000);
+    return () => clearTimeout(id);
+  }, [paper, paperClk, paperTick]);
 
   const contestTick = useCallback(async () => {
     if (advanceInFlightRef.current || !session) return;
@@ -800,6 +905,9 @@ export default function App() {
             <button className="menu-btn" onClick={openCompete}>
               Compete
             </button>
+            <button className="menu-btn" onClick={() => { setPaperClk(null); setScreen("paper_setup"); }}>
+              Paper trading
+            </button>
             <button className="menu-btn" onClick={openProgress}>
               Your progress
             </button>
@@ -848,6 +956,46 @@ export default function App() {
           </ol>
           <button className="menu-btn" onClick={() => setScreen("menu")}>
             Back to menu
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "paper_setup") {
+    const durations = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+        </header>
+        <main className="paper-setup">
+          <h2>Paper trading</h2>
+          <p className="paper-sub">Practice reading a live market and executing a plan, risk-free.</p>
+          <div className="paper-how">
+            <div className="paper-how-line"><span className="paper-how-num">1</span> Study a warm-up chart — the market's recent history, no ticker shown.</div>
+            <div className="paper-how-line"><span className="paper-how-num">2</span> Go live. Fresh bars arrive in real time over your chosen window.</div>
+            <div className="paper-how-line"><span className="paper-how-num">3</span> Trade the tape as it prints, then get scored on discipline like any run.</div>
+          </div>
+          <div className="paper-duration-label">Live window</div>
+          <div className="paper-duration-grid">
+            {durations.map((d) => (
+              <button
+                key={d}
+                className={paperDuration === d ? "paper-dur-btn active" : "paper-dur-btn"}
+                onClick={() => setPaperDuration(d)}
+              >
+                {d}m
+              </button>
+            ))}
+          </div>
+          <button
+            className="menu-btn menu-btn-primary"
+            disabled={loading}
+            onClick={() => startPaperSession(paperDuration)}
+          >
+            {loading ? "Preparing market…" : `Start ${paperDuration}-minute session`}
           </button>
         </main>
       </div>
@@ -1552,6 +1700,31 @@ export default function App() {
 
       <div className="chart-container" ref={containerRef} />
 
+      {paper && paper.phase === "analysis" && (
+        <div className="paper-banner paper-analysis">
+          <div className="paper-banner-text">
+            <span className="paper-tag">WARM-UP</span>
+            Study the tape. When you're ready, go live and fresh bars print in real
+            time for {paper.duration} minutes.
+          </div>
+          <button className="paper-golive-btn" onClick={goLive}>GO LIVE ▶</button>
+        </div>
+      )}
+
+      {paper && paper.phase === "live" && (
+        <div className="paper-banner paper-live">
+          <div className="paper-banner-text">
+            <span className="paper-tag live">● LIVE</span>
+            {paperClk && paperClk.remaining_seconds != null
+              ? `${fmtClock(paperClk.remaining_seconds)} left`
+              : "market running…"}
+          </div>
+          <button className="paper-end-btn" onClick={() => { endedRef.current = true; finishPaper(); }}>
+            End &amp; score
+          </button>
+        </div>
+      )}
+
       {session?.mode === "fund_manager" && (
         <div className="fm-banner">
           FUND MANAGER · client money — stop required, max 1% risk/trade, 8% drawdown ends the mandate
@@ -1636,20 +1809,24 @@ export default function App() {
 
       <div className="controls">
         <div className="control-row">
-          <div className="speed-group">
-            {SPEEDS.map((s) => (
-              <button
-                key={s.label}
-                className={speed.label === s.label ? "speed-btn active" : "speed-btn"}
-                onClick={() => setSpeed(s)}
-              >
-                {s.label}
+          {!paper && (
+            <>
+              <div className="speed-group">
+                {SPEEDS.map((s) => (
+                  <button
+                    key={s.label}
+                    className={speed.label === s.label ? "speed-btn active" : "speed-btn"}
+                    onClick={() => setSpeed(s)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <button className="speed-btn" onClick={() => setPlaying((p) => !p)}>
+                {playing ? "Pause" : "Play"}
               </button>
-            ))}
-          </div>
-          <button className="speed-btn" onClick={() => setPlaying((p) => !p)}>
-            {playing ? "Pause" : "Play"}
-          </button>
+            </>
+          )}
           {timeframes.length > 1 && (
             <div className="tf-group" title="Chart timeframe">
               {timeframes.map((tf) => (
@@ -1755,8 +1932,10 @@ export default function App() {
             ? async () => { if (!endedRef.current) { endedRef.current = true; setPlaying(false); await finishPractice(); } }
             : contestMode
             ? async () => { if (!endedRef.current) { endedRef.current = true; setPlaying(false); await finishContest(); } }
+            : paper
+            ? () => { if (!endedRef.current) { endedRef.current = true; finishPaper(); } }
             : handleEndSession}>
-            {practiceCheck ? "Grade my run" : contestMode ? "Submit run" : "End session"}
+            {practiceCheck ? "Grade my run" : contestMode ? "Submit run" : paper ? "End & score" : "End session"}
           </button>
         </div>
 

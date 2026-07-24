@@ -222,6 +222,31 @@ export async function getLeagueLeaderboard(leagueId) {
   return res.json();
 }
 
+// ── Paper trading (Phase 2) ──
+export async function getPaperConfig() {
+  const res = await fetch(`${API_BASE}/paper/config`);
+  return res.json();
+}
+export async function startPaper(userId, durationMinutes) {
+  const res = await fetch(`${API_BASE}/paper/start`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, duration_minutes: durationMinutes }),
+  });
+  return res.json();
+}
+export async function paperGoLive(sessionId) {
+  const res = await fetch(`${API_BASE}/paper/${sessionId}/go-live`, { method: "POST" });
+  return res.json();
+}
+export async function paperClock(sessionId) {
+  const res = await fetch(`${API_BASE}/paper/${sessionId}/clock`);
+  return res.json();
+}
+export async function paperEnd(sessionId) {
+  const res = await fetch(`${API_BASE}/paper/${sessionId}/end`, { method: "POST" });
+  return res.json();
+}
+
 // ── Academy practice checks (Phase 1) ──
 export async function startPracticeCheck(checkId, userId) {
   const res = await fetch(`${API_BASE}/academy/practice/start`, {

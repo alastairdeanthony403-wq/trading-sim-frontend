@@ -5,6 +5,9 @@ import {
   startSession,
   getBars,
   getReference,
+  startPracticeCheck as apiStartPracticeCheck,
+  getPracticeStatus,
+  gradePracticeCheck,
   openTrade,
   closeTrade,
   advanceSession,
@@ -138,6 +141,13 @@ export default function App() {
   const [joinCode, setJoinCode] = useState("");
   const [leagueName, setLeagueName] = useState("");
   const contestBarCountRef = useRef(0);
+  // Academy scenario-check (Phase 1): a concept-matched practice run embedded in
+  // an end-of-unit check. Reuses the reveal-driven playback + terminal wholesale.
+  const [practiceCheck, setPracticeCheck] = useState(null);   // { check_id, goal, rules }
+  const [practiceStatus, setPracticeStatus] = useState(null); // live rule HUD { results, passed }
+  const [scenarioOutcome, setScenarioOutcome] = useState(null); // {check_id, passed, results, goal}
+  const practiceCheckRef = useRef(null);
+  practiceCheckRef.current = practiceCheck;
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
@@ -402,6 +412,53 @@ export default function App() {
     setScreen("contestResult");
   }, [contest, session]);
 
+  // ── Academy scenario-check: launch a concept-matched practice run ──────────
+  const startScenarioCheck = useCallback(async (checkId) => {
+    setLoading(true);
+    setScenarioOutcome(null);
+    const s = await apiStartPracticeCheck(checkId, getUserId());
+    contestBarCountRef.current = s.total_bars || 0;
+    const bars = await getBars(s.session_id);   // server caps to the warm-up window
+    try {
+      const t = await getTools(getUserId());
+      setUnlockedTools(t.unlocked_tools || []); setToolLevel(t.tool_level || 1);
+    } catch { setUnlockedTools([]); setToolLevel(1); }
+    setSession({ session_id: s.session_id, scenario_id: s.scenario_id, is_contest: false, mode: "practice" });
+    setContestMode(true);                       // reuse the reveal-driven playback loop
+    setPracticeCheck({ check_id: checkId, goal: s.goal, rules: s.rules, is_fallback: s.is_fallback });
+    setPracticeStatus(null);
+    setAllBars(bars);
+    setTimeframes([]); setChartTf(null); setPlaybackStep(1);
+    setSessionBands([]); setBarsPerDay(0); setReference([]);
+    setVisibleCount(bars.length);
+    setPositions([]);
+    setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
+    setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setMarginCall(false); setConcentrated(false);
+    setEvents([]); setScamDebrief(null); setVoices([]);
+    setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
+    endedRef.current = false; setLastFill(null); setResults(null); setContestResult(null);
+    setScreen("playing");
+    setLoading(false);
+  }, []);
+
+  const finishPractice = useCallback(async () => {
+    const pc = practiceCheckRef.current;
+    if (!pc || !session) return;
+    let g = null;
+    try { g = await gradePracticeCheck(session.session_id); } catch { g = { passed: false, results: [] }; }
+    setContestMode(false);
+    setPracticeCheck(null);
+    setScenarioOutcome({ check_id: pc.check_id, passed: !!g.passed, results: g.results || [], goal: pc.goal });
+    setScreen("learn");
+  }, [session]);
+
+  // Live rule HUD for a practice check — re-evaluated server-side as bars reveal.
+  useEffect(() => {
+    if (!practiceCheck || !session) return;
+    getPracticeStatus(session.session_id).then(setPracticeStatus).catch(() => {});
+  }, [practiceCheck, session, visibleCount]);
+
   const contestTick = useCallback(async () => {
     if (advanceInFlightRef.current || !session) return;
     advanceInFlightRef.current = true;
@@ -425,7 +482,8 @@ export default function App() {
       if (done && !endedRef.current) {
         endedRef.current = true;
         setPlaying(false);
-        await finishContest();
+        if (practiceCheckRef.current) await finishPractice();
+        else await finishContest();
       }
     } catch {
       /* transient — next tick retries */
@@ -759,6 +817,9 @@ export default function App() {
       <Learn
         progressData={progressData}
         onExit={() => setScreen("menu")}
+        onScenarioCheck={startScenarioCheck}
+        scenarioOutcome={scenarioOutcome}
+        onScenarioConsumed={() => setScenarioOutcome(null)}
         onProgressUpdate={(res) => {
           setProgressData((prev) => ({
             ...prev,
@@ -1473,6 +1534,22 @@ export default function App() {
         </div>
       </header>
 
+      {practiceCheck && (
+        <div className="practice-hud">
+          <div className="practice-hud-goal">
+            <span className="practice-hud-tag">PRACTICE CHECK</span>
+            {practiceCheck.goal}
+          </div>
+          <div className="practice-hud-rules">
+            {(practiceStatus?.results || practiceCheck.rules).map((r, i) => {
+              const live = practiceStatus?.results?.[i];
+              const cls = live ? (live.passed ? "rule-ok" : "rule-bad") : "rule-pending";
+              return <span key={i} className={`rule-chip ${cls}`}>{live ? (live.passed ? "✓" : "○") : "○"} {r.label}</span>;
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="chart-container" ref={containerRef} />
 
       {session?.mode === "fund_manager" && (
@@ -1674,10 +1751,12 @@ export default function App() {
           <button className="short-btn" onClick={() => handleOpenTrade("short")} disabled={!canOpenNew}>
             SHORT
           </button>
-          <button className="end-btn" onClick={contestMode
+          <button className="end-btn" onClick={practiceCheck
+            ? async () => { if (!endedRef.current) { endedRef.current = true; setPlaying(false); await finishPractice(); } }
+            : contestMode
             ? async () => { if (!endedRef.current) { endedRef.current = true; setPlaying(false); await finishContest(); } }
             : handleEndSession}>
-            {contestMode ? "Submit run" : "End session"}
+            {practiceCheck ? "Grade my run" : contestMode ? "Submit run" : "End session"}
           </button>
         </div>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LESSONS } from "./lessons";
 import { CHECKS } from "./checks";
 import { getUserId } from "./user";
@@ -18,10 +18,19 @@ function itemTitle(item) {
   return CHECKS[item.id]?.title || item.id;
 }
 
-export default function Learn({ progressData, onExit, onProgressUpdate }) {
+export default function Learn({ progressData, onExit, onProgressUpdate,
+                                onScenarioCheck, scenarioOutcome, onScenarioConsumed }) {
   const [view, setView] = useState("path");
   const [activeItem, setActiveItem] = useState(null);
   const [, forceRefresh] = useState(0);
+
+  // Returning from a scenario-check run: re-open that check at its result screen.
+  useEffect(() => {
+    if (!scenarioOutcome) return;
+    const item = (progressData?.ordered_path || [])
+      .find((i) => i.type === "check" && i.id === scenarioOutcome.check_id);
+    if (item) { setActiveItem(item); setView("player"); }
+  }, [scenarioOutcome]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!progressData) {
     return (
@@ -67,8 +76,12 @@ export default function Learn({ progressData, onExit, onProgressUpdate }) {
     return (
       <KnowledgeCheck
         check={CHECKS[activeItem.id]}
+        checkId={activeItem.id}
         onComplete={handleItemComplete}
-        onQuit={() => { setView("path"); setActiveItem(null); }}
+        onQuit={() => { onScenarioConsumed?.(); setView("path"); setActiveItem(null); }}
+        onScenarioCheck={onScenarioCheck}
+        scenarioResult={scenarioOutcome && scenarioOutcome.check_id === activeItem.id ? scenarioOutcome : null}
+        onScenarioConsumed={onScenarioConsumed}
       />
     );
   }
@@ -350,18 +363,27 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
 
 // ---------- Knowledge check ----------
 
-function KnowledgeCheck({ check, onComplete, onQuit }) {
+function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, scenarioResult, onScenarioConsumed }) {
+  const [phase, setPhase] = useState(scenarioResult ? "scenario_result" : "questions");
   const [qIndex, setQIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [sessionXp, setSessionXp] = useState(0);
-  const [finished, setFinished] = useState(false);
   const [awarded, setAwarded] = useState(null);
   const [xpFlash, setXpFlash] = useState(null);
+  const [bonusBanked, setBonusBanked] = useState(false);
 
   const q = check.questions[qIndex];
   const isLast = qIndex === check.questions.length - 1;
+
+  // Bank the check-passed bonus once, when the live demonstration is graded a pass.
+  useEffect(() => {
+    if (phase === "scenario_result" && scenarioResult?.passed && !bonusBanked) {
+      addXp(XP_RULES.checkPassed);
+      setBonusBanked(true);
+    }
+  }, [phase, scenarioResult, bonusBanked]);
 
   const answerQ = (idx) => {
     if (answer != null) return;
@@ -380,48 +402,94 @@ function KnowledgeCheck({ check, onComplete, onQuit }) {
   };
 
   const next = () => {
-    if (isLast) {
-      const passed = correctCount >= check.passMark;
-      let earned = sessionXp + (passed ? XP_RULES.checkPassed : 0);
-      const res = addXp(earned);
-      setAwarded({ earned, passed, leveledUp: res.leveledUp, newRank: levelFor(res.after) });
-      setFinished(true);
+    if (!isLast) { setQIndex((i) => i + 1); setAnswer(null); return; }
+    const questionsPassed = correctCount >= check.passMark;
+    addXp(sessionXp);                       // bank the quiz XP now
+    if (questionsPassed) {
+      setPhase("scenario_gate");            // now demonstrate it live to clear the unit
     } else {
-      setQIndex((i) => i + 1);
-      setAnswer(null);
+      setAwarded({ earned: sessionXp });
+      setPhase("questions_failed");
     }
   };
 
-  if (finished && awarded) {
+  // ── Questions failed — retry the quiz ──
+  if (phase === "questions_failed") {
     return (
       <div className="app">
         <header className="header"><div className="logo">TAPE//RUN</div></header>
         <main className="lesson-player summary-screen">
-          <div className="summary-emoji">{awarded.passed ? "🏆" : "🔁"}</div>
-          <h2>{awarded.passed ? "Check passed" : "Almost there"}</h2>
+          <div className="summary-emoji">🔁</div>
+          <h2>Almost there</h2>
           <p className="lesson-body">
-            {correctCount} / {check.questions.length} correct.
-            {awarded.passed ? " Unit cleared — bonus banked." : ` You need ${check.passMark} to pass — the XP you earned still counts. Run it back.`}
+            {correctCount} / {check.questions.length} correct. You need {check.passMark} to pass —
+            the XP you earned still counts. Run it back.
           </p>
-          <div className="xp-award">+{awarded.earned} XP</div>
-          {awarded.leveledUp && (
-            <div className="levelup-banner">⬆ RANK UP — you are now <strong>{awarded.newRank.name}</strong></div>
-          )}
-          {awarded.passed && check.practice && (
+          <div className="xp-award">+{awarded?.earned || 0} XP</div>
+          <button className="primary-btn" onClick={() => {
+            setQIndex(0); setAnswer(null); setCorrectCount(0); setStreak(0);
+            setSessionXp(0); setAwarded(null); setPhase("questions");
+          }}>Retry check</button>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Scenario gate — prove the concept in a live market ──
+  if (phase === "scenario_gate") {
+    return (
+      <div className="app">
+        <header className="header"><div className="logo">TAPE//RUN</div></header>
+        <main className="lesson-player summary-screen">
+          <div className="summary-emoji">🎯</div>
+          <h2>Now prove it live</h2>
+          <p className="lesson-body">
+            Questions cleared. The last step is to demonstrate the concept in a live market —
+            trade it with discipline. A fresh market is generated for every attempt.
+          </p>
+          {check.practice && (
             <div className="practice-directive">
-              <div className="practice-label">PRACTICE IN THE SIMULATOR</div>
+              <div className="practice-label">YOUR TASK</div>
               <p>{check.practice}</p>
             </div>
           )}
-          {awarded.passed ? (
-            <button className="primary-btn" onClick={onComplete}>Continue</button>
+          <button className="primary-btn" onClick={() => onScenarioCheck?.(checkId)}>Enter the simulator</button>
+          <button className="link-btn" onClick={onQuit}>Do this later</button>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Scenario result — after the server graded the run ──
+  if (phase === "scenario_result") {
+    const passed = !!scenarioResult?.passed;
+    return (
+      <div className="app">
+        <header className="header"><div className="logo">TAPE//RUN</div></header>
+        <main className="lesson-player summary-screen">
+          <div className="summary-emoji">{passed ? "🏆" : "🔁"}</div>
+          <h2>{passed ? "Check cleared" : "Not cleared yet"}</h2>
+          <p className="lesson-body">
+            {passed
+              ? "You demonstrated the concept with discipline — unit cleared."
+              : "The market got the better of that run. Your read may be right; the execution has to hold up. Try a fresh market."}
+          </p>
+          {(scenarioResult?.results || []).length > 0 && (
+            <div className="scenario-rules">
+              {scenarioResult.results.map((r, i) => (
+                <span key={i} className={`rule-chip ${r.passed ? "rule-ok" : "rule-bad"}`}>
+                  {r.passed ? "✓" : "○"} {r.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {passed ? (
+            <button className="primary-btn" onClick={() => { onScenarioConsumed?.(); onComplete(); }}>Continue</button>
           ) : (
-            <button className="primary-btn" onClick={() => {
-              setQIndex(0); setAnswer(null); setCorrectCount(0); setStreak(0);
-              setSessionXp(0); setFinished(false); setAwarded(null);
-            }}>
-              Retry check
-            </button>
+            <>
+              <button className="primary-btn" onClick={() => { onScenarioConsumed?.(); onScenarioCheck?.(checkId); }}>Run a fresh market</button>
+              <button className="link-btn" onClick={() => { onScenarioConsumed?.(); onQuit(); }}>Back to path</button>
+            </>
           )}
         </main>
       </div>

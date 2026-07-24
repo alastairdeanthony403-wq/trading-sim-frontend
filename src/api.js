@@ -222,6 +222,26 @@ export async function getLeagueLeaderboard(leagueId) {
   return res.json();
 }
 
+// ── Academy practice checks (Phase 1) ──
+export async function startPracticeCheck(checkId, userId) {
+  const res = await fetch(`${API_BASE}/academy/practice/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ check_id: checkId, user_id: userId }),
+  });
+  return res.json();
+}
+
+export async function getPracticeStatus(sessionId) {
+  const res = await fetch(`${API_BASE}/academy/practice/${sessionId}/status`);
+  return res.json();
+}
+
+export async function gradePracticeCheck(sessionId) {
+  const res = await fetch(`${API_BASE}/academy/practice/${sessionId}/grade`, { method: "POST" });
+  return res.json();
+}
+
 export async function markComplete(userId, itemId) {
   const res = await fetch(`${API_BASE}/progress/${userId}/complete`, {
     method: "POST",

@@ -487,6 +487,39 @@ body {
 
 .setup-hint { color: var(--faint); font-size: 11px; }
 
+/* Academy scenario-check HUD (Phase 1) */
+.practice-hud {
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent, var(--green));
+  border-radius: 8px;
+  background: var(--green-soft);
+}
+
+.practice-hud-goal { font-size: 13px; line-height: 1.5; color: var(--text); }
+
+.practice-hud-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--bg, #0b0e11);
+  background: var(--accent, var(--green));
+}
+
+.practice-hud-rules,
+.scenario-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.scenario-rules { justify-content: center; margin: 12px 0 18px; }
+
 /* Intraday trading-session chip (Phase 4) */
 .session-chip {
   display: inline-flex;

@@ -30,6 +30,9 @@ function clampLevel(kind, direction, price, current) {
 function fmtMoney(v) {
   return `${v >= 0 ? "+" : "−"}$${Math.abs(v).toFixed(2)}`;
 }
+function fmtAbs(v) {
+  return `$${Math.abs(v).toFixed(2)}`;
+}
 
 export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, onCommit }) {
   const layerRef = useRef(null);
@@ -40,16 +43,37 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
   posRef.current = positions;
   priceRef.current = currentPrice;
 
-  // Level (committed or, mid-drag, the live dragged value) for one row.
-  const levelFor = (pos, kind) => {
+  // The level that's actually in force: the live dragged value, else the
+  // persisted stop/target, else null (an unset stop/target — no ghost).
+  const activeLevel = (pos, kind) => {
     const d = dragRef.current;
     if (d && d.tradeId === pos.trade_id && d.kind === kind) return d.price;
     if (kind === "entry") return pos.entry_price;
     const explicit = kind === "sl" ? pos.stop_loss : pos.take_profit;
-    if (explicit != null) return explicit;
-    const cur = priceRef.current ?? pos.entry_price;              // ghost default
+    return explicit != null ? explicit : null;
+  };
+
+  // Where to draw the row: the active level, or a ghost default for an unset
+  // stop/target so there's still a handle to grab.
+  const levelFor = (pos, kind) => {
+    const a = activeLevel(pos, kind);
+    if (a != null) return a;
+    const cur = priceRef.current ?? pos.entry_price;
     const longSide = pos.direction === "long" ? kind === "sl" : kind === "tp";
     return longSide ? cur * (1 - OFFSET) : cur * (1 + OFFSET);
+  };
+
+  // Entry badge text: live P&L, plus risk / reward / R:R once both a stop and a
+  // target are in force (persisted or mid-drag), so it updates as you drag.
+  const entryBadge = (pos) => {
+    const pnl = pnlAt(pos, priceRef.current ?? pos.entry_price);
+    const sl = activeLevel(pos, "sl");
+    const tp = activeLevel(pos, "tp");
+    if (sl == null || tp == null) return fmtMoney(pnl);
+    const risk = Math.abs(pnlAt(pos, sl));
+    const reward = Math.abs(pnlAt(pos, tp));
+    const rr = risk > 0 ? (reward / risk).toFixed(2) : "∞";
+    return `${fmtMoney(pnl)} · risk ${fmtAbs(risk)} / reward ${fmtAbs(reward)} · R:R ${rr}`;
   };
 
   // rAF loop: glue every row to its price and refresh its money badge.
@@ -67,12 +91,9 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
             if (y == null) { row.line.style.display = "none"; continue; }
             row.line.style.display = "";
             row.line.style.top = `${y}px`;
-            const money = kind === "entry"
-              ? pnlAt(pos, priceRef.current ?? pos.entry_price)   // live P&L
-              : pnlAt(pos, level);                                // risk / reward
             row.badge.textContent = kind === "entry"
-              ? fmtMoney(money)
-              : `${level.toFixed(2)} · ${fmtMoney(money)}`;
+              ? entryBadge(pos)                                   // live P&L (+ R:R)
+              : `${level.toFixed(2)} · ${fmtMoney(pnlAt(pos, level))}`;
           }
         }
       }

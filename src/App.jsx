@@ -135,6 +135,12 @@ export default function App() {
   const [trailInput, setTrailInput] = useState("");
   const [leverage, setLeverage] = useState(1);
   const [orderError, setOrderError] = useState("");
+  // Pre-entry trade planning (Phase 5): stage stop/target on the chart before
+  // entering, and size the position from a chosen risk. Staged levels reuse the
+  // stop/take-profit inputs, so they flow straight into the market order.
+  const [planning, setPlanning] = useState(false);
+  const [riskInput, setRiskInput] = useState("");
+  const [riskMode, setRiskMode] = useState("cash"); // cash | pct
   const [marginCall, setMarginCall] = useState(false);
   const [concentrated, setConcentrated] = useState(false);
   const [fundManager, setFundManager] = useState(false);   // client-money rules
@@ -454,6 +460,7 @@ export default function App() {
     setPositions([]);
     setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
     setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setPlanning(false); setRiskInput("");
     setMarginCall(false); setConcentrated(false);
     setEvents([]); setScamDebrief(null); setVoices([]);
     setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
@@ -483,6 +490,7 @@ export default function App() {
   const resetTerminal = () => {
     setPositions([]); setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
     setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setPlanning(false); setRiskInput("");
     setMarginCall(false); setConcentrated(false);
     setEvents([]); setScamDebrief(null); setVoices([]);
     setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
@@ -732,6 +740,7 @@ export default function App() {
     setPositions([]);
     setOrderType("market"); setEntryPriceInput(""); setStopLossInput("");
     setTakeProfitInput(""); setTrailInput(""); setLeverage(1); setOrderError("");
+    setPlanning(false); setRiskInput("");
     setMarginCall(false); setConcentrated(false);
     setEvents([]); setScamDebrief(null); setVoices([]);
     setActiveMission(null); setActiveIsDaily(false); setMissionStatus(null); setMissionResult(null);
@@ -778,14 +787,26 @@ export default function App() {
     if (!currentBar) return;
     if (orderType !== "market" && entryPriceInput === "") return;  // resting order needs a price
     const num = (v) => (v !== "" ? Number(v) : undefined);
+    // A staged stop/target must sit on the right side of the price for the chosen
+    // direction, or it would trigger the instant the position opens.
+    const ref = orderType === "market" ? currentBar.close : Number(entryPriceInput);
+    const sl = num(stopLossInput), tp = num(takeProfitInput);
+    if (sl != null) {
+      if (direction === "long" && sl >= ref) return setOrderError("Stop is above the price — for a long, drag it below.");
+      if (direction === "short" && sl <= ref) return setOrderError("Stop is below the price — for a short, drag it above.");
+    }
+    if (tp != null) {
+      if (direction === "long" && tp <= ref) return setOrderError("Target is below the price — for a long, drag it above.");
+      if (direction === "short" && tp >= ref) return setOrderError("Target is above the price — for a short, drag it below.");
+    }
     setLastFill(null);
     setOrderError("");
     const res = await openTrade(session.session_id, {
       direction,
       size: tradeSize,
       barSequence: currentBar.bar_sequence,
-      stopLoss: num(stopLossInput),
-      takeProfit: num(takeProfitInput),
+      stopLoss: sl,
+      takeProfit: tp,
       orderType,
       entryOrderPrice: num(entryPriceInput),
       trailDistance: num(trailInput),
@@ -799,6 +820,7 @@ export default function App() {
     setStopLossInput("");
     setTakeProfitInput("");
     setTrailInput("");
+    setPlanning(false); setRiskInput("");
     await refreshPositions();
   };
 
@@ -871,6 +893,18 @@ export default function App() {
   const has = (tool) => unlockedTools.includes(tool);
   const liveOrders = openPositions.length + pendingOrders.length;
   const canOpenNew = has("multi_position") || liveOrders === 0;
+
+  // Risk-based sizing (Phase 5): while planning, once a stop and a risk amount
+  // are set, size the position so a stop-out loses exactly that risk. Recomputes
+  // live as the stop is dragged (stopLossInput changes) or the risk is edited.
+  useEffect(() => {
+    if (!planning || stopLossInput === "" || riskInput === "" || !currentBar) return;
+    const stop = Number(stopLossInput);
+    const risk = riskMode === "pct" ? balance * (Number(riskInput) / 100) : Number(riskInput);
+    const dist = Math.abs(currentBar.close - stop);
+    if (!(risk > 0) || !(dist > 0)) return;
+    setTradeSize(Math.max(1, Math.round(risk / dist)));
+  }, [planning, stopLossInput, riskInput, riskMode, balance, currentBar]);
 
   // ---------- SCREENS ----------
 
@@ -1709,12 +1743,19 @@ export default function App() {
 
       <div className="chart-wrap">
         <div className="chart-container" ref={containerRef} />
-        {openPositions.length > 0 && (
+        {(openPositions.length > 0 || planning) && (
           <ChartTradeOverlay
             seriesRef={seriesRef}
             positions={openPositions}
             currentPrice={currentBar?.close}
             onCommit={handleAdjustLevel}
+            plan={planning && openPositions.length === 0 ? {
+              stop: stopLossInput !== "" ? Number(stopLossInput) : null,
+              target: takeProfitInput !== "" ? Number(takeProfitInput) : null,
+              size: tradeSize,
+              onChange: (which, price) =>
+                which === "stop" ? setStopLossInput(String(price)) : setTakeProfitInput(String(price)),
+            } : null}
           />
         )}
       </div>
@@ -1875,6 +1916,33 @@ export default function App() {
         </div>
 
         <div className="control-row">
+          {openPositions.length === 0 && (
+            <button
+              className={planning ? "plan-btn active" : "plan-btn"}
+              onClick={() => setPlanning((p) => !p)}
+              title="Stage a stop &amp; target on the chart, and size from your risk, before you enter"
+            >
+              {planning ? "✓ Planning" : "⊹ Plan trade"}
+            </button>
+          )}
+          {planning && (
+            <label className="field-label">Risk
+              <span className="risk-field">
+                <input
+                  type="number" className="size-input risk-input" value={riskInput}
+                  placeholder={riskMode === "pct" ? "%" : "$"} step="any" min="0"
+                  onChange={(e) => setRiskInput(e.target.value)}
+                />
+                <button
+                  className="risk-mode-btn"
+                  onClick={() => setRiskMode((m) => (m === "cash" ? "pct" : "cash"))}
+                  title="Toggle risk in dollars or percent of balance"
+                >
+                  {riskMode === "pct" ? "%" : "$"}
+                </button>
+              </span>
+            </label>
+          )}
           {has("limit_stop") && (
             <label className="field-label">Type
               <select

@@ -34,14 +34,16 @@ function fmtAbs(v) {
   return `$${Math.abs(v).toFixed(2)}`;
 }
 
-export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, onCommit }) {
+export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, onCommit, plan }) {
   const layerRef = useRef(null);
   const rowsRef = useRef(new Map());   // key -> { line, badge, price, kind }
-  const dragRef = useRef(null);        // { tradeId, kind, price } while dragging
+  const dragRef = useRef(null);        // { tradeId|plan, kind, price } while dragging
   const posRef = useRef(positions);
   const priceRef = useRef(currentPrice);
+  const planRef = useRef(plan);        // pre-entry staged plan (or null)
   posRef.current = positions;
   priceRef.current = currentPrice;
+  planRef.current = plan;
 
   // The level that's actually in force: the live dragged value, else the
   // persisted stop/target, else null (an unset stop/target — no ghost).
@@ -76,6 +78,36 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
     return `${fmtMoney(pnl)} · risk ${fmtAbs(risk)} / reward ${fmtAbs(reward)} · R:R ${rr}`;
   };
 
+  // ── Pre-entry plan (staged stop / target before a position exists) ──────
+  const planActive = (kind) => {
+    const d = dragRef.current;
+    if (d && d.plan && d.kind === kind) return d.price;
+    const p = planRef.current;
+    const v = kind === "sl" ? p?.stop : p?.target;
+    return v != null ? v : null;
+  };
+  const planLevel = (kind) => {
+    const a = planActive(kind);
+    if (a != null) return a;
+    const cur = priceRef.current ?? 0;          // ghost default around current price
+    return kind === "sl" ? cur * (1 - OFFSET) : cur * (1 + OFFSET);
+  };
+  const planBadge = (kind) => {
+    const cur = priceRef.current ?? 0;
+    const size = planRef.current?.size ?? 0;
+    if (kind === "entry") {
+      const sl = planActive("sl"), tp = planActive("tp");
+      if (sl == null || tp == null) return "PLAN · drag stop & target to plan the trade";
+      const risk = Math.abs(cur - sl) * size;
+      const reward = Math.abs(tp - cur) * size;
+      const rr = risk > 0 ? (reward / risk).toFixed(2) : "∞";
+      return `PLAN · risk ${fmtAbs(risk)} / reward ${fmtAbs(reward)} · R:R ${rr}`;
+    }
+    const level = planLevel(kind);
+    const amt = Math.abs(kind === "sl" ? cur - level : level - cur) * size;
+    return `${level.toFixed(2)} · ${kind === "sl" ? "risk" : "reward"} ${fmtAbs(amt)}`;
+  };
+
   // rAF loop: glue every row to its price and refresh its money badge.
   useEffect(() => {
     let raf = 0;
@@ -94,6 +126,18 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
             row.badge.textContent = kind === "entry"
               ? entryBadge(pos)                                   // live P&L (+ R:R)
               : `${level.toFixed(2)} · ${fmtMoney(pnlAt(pos, level))}`;
+          }
+        }
+        if (planRef.current) {
+          for (const kind of ["entry", "sl", "tp"]) {
+            const row = rowsRef.current.get(`plan:${kind}`);
+            if (!row) continue;
+            const level = kind === "entry" ? (priceRef.current ?? 0) : planLevel(kind);
+            const y = series.priceToCoordinate(level);
+            if (y == null) { row.line.style.display = "none"; continue; }
+            row.line.style.display = "";
+            row.line.style.top = `${y}px`;
+            row.badge.textContent = planBadge(kind);
           }
         }
       }
@@ -122,6 +166,31 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
       if (d && d.tradeId === pos.trade_id && d.kind === kind) {
         const level = Number(d.price.toFixed(4));
         onCommit(pos.trade_id, kind === "sl" ? { stop_loss: level } : { take_profit: level });
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  // Drag a staged plan line. No direction yet, so placement is free; the entry
+  // handler validates the side once you press LONG/SHORT.
+  const startPlanDrag = (kind) => (e) => {
+    e.preventDefault();
+    const layer = layerRef.current;
+    const move = (ev) => {
+      const series = seriesRef.current;
+      const rect = layer.getBoundingClientRect();
+      const raw = series?.coordinateToPrice(ev.clientY - rect.top);
+      if (raw == null) return;
+      dragRef.current = { plan: true, kind, price: raw };
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (d && d.plan && d.kind === kind) {
+        planRef.current?.onChange(kind === "sl" ? "stop" : "target", Number(d.price.toFixed(4)));
       }
     };
     window.addEventListener("pointermove", move);
@@ -164,6 +233,29 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
           );
         })
       ))}
+      {plan && ["entry", "sl", "tp"].map((kind) => {
+        const key = `plan:${kind}`;
+        const ghost = kind !== "entry" && (kind === "sl" ? plan.stop : plan.target) == null;
+        return (
+          <div
+            key={key}
+            ref={bind(key, "line")}
+            className={`to-line to-${kind}${ghost ? " to-ghost" : ""}`}
+          >
+            <span className={`to-badge to-badge-${kind}`} ref={bind(key, "badge")} />
+            {kind !== "entry" && (
+              <span
+                className={`to-grip to-grip-${kind}`}
+                onPointerDown={startPlanDrag(kind)}
+                title={`Drag to set the ${kind === "sl" ? "stop-loss" : "take-profit"}`}
+              >
+                {kind === "sl" ? "SL" : "TP"}{ghost ? " ⇕" : ""}
+              </span>
+            )}
+            {kind === "entry" && <span className="to-tag to-tag-plan">PLAN</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }

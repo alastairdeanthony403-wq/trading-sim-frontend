@@ -1933,6 +1933,42 @@ body {
 }
 .to-tag-long  { color: var(--green); background: var(--green-soft); }
 .to-tag-short { color: var(--red);   background: var(--red-soft); }
+.to-tag-plan  { color: var(--cyan);  background: var(--cyan-soft); }
+
+/* ── Trade planning controls (Phase 5) ───────────────────────────────── */
+.plan-btn {
+  align-self: flex-end;
+  padding: 7px 12px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--line-bright);
+  color: var(--muted);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.plan-btn:hover { border-color: var(--cyan); color: var(--text); }
+.plan-btn.active {
+  background: var(--cyan-soft);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.risk-field { display: inline-flex; gap: 4px; }
+.risk-input { width: 74px; }
+.risk-mode-btn {
+  width: 30px;
+  border-radius: 3px;
+  border: 1px solid var(--line-bright);
+  background: var(--panel-raised);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-weight: 700;
+  cursor: pointer;
+}
+.risk-mode-btn:hover { border-color: var(--cyan); }
 
 .to-grip {
   position: absolute;

@@ -1878,6 +1878,82 @@ body {
   .gloss::after { width: 210px; }
 }
 
+/* ── Interactive trade overlay (Phase 3) ─────────────────────────────── */
+.chart-wrap { position: relative; }
+.trade-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;   /* let the chart handle pans/zooms; only grips catch */
+  z-index: 4;
+}
+.to-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+  border-top: 1px dashed var(--line-bright);
+}
+.to-entry  { border-top-color: rgba(154, 165, 177, 0.7); }
+.to-sl     { border-top-color: var(--red); }
+.to-tp     { border-top-color: var(--green); }
+.to-ghost  { border-top-style: dotted; opacity: 0.6; }
+
+.to-badge {
+  position: absolute;
+  left: 8px;
+  transform: translateY(-50%);
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.to-badge-entry { color: var(--text); border-color: rgba(154, 165, 177, 0.5); }
+.to-badge-sl    { color: var(--red);   border-color: rgba(255, 95, 92, 0.5); }
+.to-badge-tp    { color: var(--green); border-color: rgba(46, 242, 160, 0.5); }
+
+.to-tag {
+  position: absolute;
+  left: 8px;
+  top: -20px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.to-tag-long  { color: var(--green); background: var(--green-soft); }
+.to-tag-short { color: var(--red);   background: var(--red-soft); }
+
+.to-grip {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  cursor: ns-resize;
+  padding: 2px 9px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  user-select: none;
+  touch-action: none;
+  transition: filter 0.1s;
+}
+.to-grip:hover { filter: brightness(1.25); }
+.to-grip-sl { color: var(--bg); background: var(--red); }
+.to-grip-tp { color: var(--bg); background: var(--green); }
+
 /* ── Paper trading (Phase 2) ─────────────────────────────────────────── */
 .paper-setup {
   max-width: 640px;

@@ -14,6 +14,7 @@ import {
   gradePracticeCheck,
   openTrade,
   closeTrade,
+  modifyTrade,
   advanceSession,
   getPositions,
   getEvents,
@@ -42,6 +43,7 @@ import { getUserId, getDisplayName, setDisplayName } from "./user";
 import { addXp } from "./xp";
 import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
+import ChartTradeOverlay from "./ChartTradeOverlay";
 import "./App.css";
 
 const SPEEDS = [
@@ -619,11 +621,9 @@ export default function App() {
     };
     for (const p of positions) {
       const tag = p.direction === "long" ? "L" : "S";
-      if (p.status === "open") {
-        add(p.entry_price, "#9aa5b1", `entry ${tag}`);
-        add(p.stop_loss, "#d9534f", "SL");
-        add(p.take_profit, "#3fb68b", "TP");
-      } else if (p.status === "pending") {
+      // Open positions are drawn by the interactive ChartTradeOverlay (Phase 3);
+      // only resting orders use static price lines here.
+      if (p.status === "pending") {
         add(p.entry_order_price, "#e0a10a", `${p.order_type} ${tag}`);
         add(p.stop_loss, "#d9534f", "SL");
         add(p.take_profit, "#3fb68b", "TP");
@@ -807,6 +807,15 @@ export default function App() {
     await closeTrade(tradeId, currentBar.bar_sequence);  // cancels if still pending
     await refreshPositions();
   };
+
+  // Drag-to-adjust a position's stop or target on the chart (Phase 3). Persist
+  // server-side, then re-pull so the order engine's copy stays authoritative.
+  const handleAdjustLevel = useCallback(async (tradeId, changes) => {
+    try {
+      await modifyTrade(tradeId, changes);
+      await refreshPositions();
+    } catch { /* leave the prior level in place on failure */ }
+  }, [refreshPositions]);
 
   const handleEndSession = async () => {
     // Flatten everything (close open, cancel pending) so the session scores on
@@ -1698,7 +1707,17 @@ export default function App() {
         </div>
       )}
 
-      <div className="chart-container" ref={containerRef} />
+      <div className="chart-wrap">
+        <div className="chart-container" ref={containerRef} />
+        {openPositions.length > 0 && (
+          <ChartTradeOverlay
+            seriesRef={seriesRef}
+            positions={openPositions}
+            currentPrice={currentBar?.close}
+            onCommit={handleAdjustLevel}
+          />
+        )}
+      </div>
 
       {paper && paper.phase === "analysis" && (
         <div className="paper-banner paper-analysis">

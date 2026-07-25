@@ -105,7 +105,7 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
     }
     const level = planLevel(kind);
     const amt = Math.abs(kind === "sl" ? cur - level : level - cur) * size;
-    return `${level.toFixed(2)} · ${kind === "sl" ? "risk" : "reward"} ${fmtAbs(amt)}`;
+    return `${kind === "sl" ? "risk" : "reward"} ${fmtAbs(amt)}`;
   };
 
   // rAF loop: glue every row to its price and refresh its money badge.
@@ -123,9 +123,14 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
             if (y == null) { row.line.style.display = "none"; continue; }
             row.line.style.display = "";
             row.line.style.top = `${y}px`;
-            row.badge.textContent = kind === "entry"
-              ? entryBadge(pos)                                   // live P&L (+ R:R)
-              : `${level.toFixed(2)} · ${fmtMoney(pnlAt(pos, level))}`;
+            if (kind === "entry") {
+              row.badge.textContent = entryBadge(pos);           // live P&L (+ R:R)
+              if (row.axis) row.axis.textContent = pos.entry_price.toFixed(2);
+            } else {
+              row.badge.textContent = fmtMoney(pnlAt(pos, level));
+              const ghost = activeLevel(pos, kind) == null;
+              if (row.axis) row.axis.textContent = `${kind === "sl" ? "SL" : "TP"} ${level.toFixed(2)}${ghost ? " ⇕" : ""}`;
+            }
           }
         }
         if (planRef.current) {
@@ -138,6 +143,12 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
             row.line.style.display = "";
             row.line.style.top = `${y}px`;
             row.badge.textContent = planBadge(kind);
+            if (kind !== "entry" && row.axis) {
+              const ghost = planActive(kind) == null;
+              row.axis.textContent = `${kind === "sl" ? "SL" : "TP"} ${level.toFixed(2)}${ghost ? " ⇕" : ""}`;
+            } else if (row.axis) {
+              row.axis.textContent = (priceRef.current ?? 0).toFixed(2);
+            }
           }
         }
       }
@@ -217,17 +228,18 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
               className={`to-line to-${kind}${ghost ? " to-ghost" : ""}`}
             >
               <span className={`to-badge to-badge-${kind}`} ref={bind(key, "badge")} />
-              {kind !== "entry" && (
+              {kind === "entry" ? (
+                <>
+                  <span className={`to-tag to-tag-${pos.direction}`}>{pos.direction === "long" ? "LONG" : "SHORT"}</span>
+                  <span className={`to-axis to-axis-${kind}`} ref={bind(key, "axis")} />
+                </>
+              ) : (
                 <span
-                  className={`to-grip to-grip-${kind}`}
+                  className={`to-axis to-axis-${kind} to-grip`}
+                  ref={bind(key, "axis")}
                   onPointerDown={startDrag(pos, kind)}
                   title={`Drag to move ${kind === "sl" ? "stop-loss" : "take-profit"}`}
-                >
-                  {kind === "sl" ? "SL" : "TP"}{ghost ? " ⇕" : ""}
-                </span>
-              )}
-              {kind === "entry" && (
-                <span className={`to-tag to-tag-${pos.direction}`}>{pos.direction === "long" ? "LONG" : "SHORT"}</span>
+                />
               )}
             </div>
           );
@@ -243,16 +255,19 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
             className={`to-line to-${kind}${ghost ? " to-ghost" : ""}`}
           >
             <span className={`to-badge to-badge-${kind}`} ref={bind(key, "badge")} />
-            {kind !== "entry" && (
+            {kind === "entry" ? (
+              <>
+                <span className="to-tag to-tag-plan">PLAN</span>
+                <span className={`to-axis to-axis-${kind}`} ref={bind(key, "axis")} />
+              </>
+            ) : (
               <span
-                className={`to-grip to-grip-${kind}`}
+                className={`to-axis to-axis-${kind} to-grip`}
+                ref={bind(key, "axis")}
                 onPointerDown={startPlanDrag(kind)}
                 title={`Drag to set the ${kind === "sl" ? "stop-loss" : "take-profit"}`}
-              >
-                {kind === "sl" ? "SL" : "TP"}{ghost ? " ⇕" : ""}
-              </span>
+              />
             )}
-            {kind === "entry" && <span className="to-tag to-tag-plan">PLAN</span>}
           </div>
         );
       })}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, CandlestickSeries, LineSeries } from "lightweight-charts";
+import { createChart, CandlestickSeries, LineSeries, CrosshairMode } from "lightweight-charts";
 import {
   listScenarios,
   startSession,
@@ -195,6 +195,8 @@ export default function App() {
   const refSeriesRef = useRef(null);             // benchmark overlay line (Phase 6)
   const containerRef = useRef(null);
   const priceLinesRef = useRef([]);              // active chart lines
+  const lastCandleRef = useRef(null);            // last displayed candle (legend default)
+  const [hoverBar, setHoverBar] = useState(null); // candle under the crosshair (OHLC box)
   const advanceInFlightRef = useRef(false);      // single in-flight /advance
   const advanceTargetRef = useRef(0);            // latest bar to advance to
   const positionsRef = useRef([]);               // positions for async handlers
@@ -254,23 +256,51 @@ export default function App() {
         background: { color: "#0b0e11" },
         textColor: "#9aa5b1",
         fontFamily: "'JetBrains Mono', monospace",
+        attributionLogo: false,          // TAPE//RUN branding, not TradingView's
       },
+      // Bars are indexed, not dated — this is a blind sim, so label the time axis
+      // and crosshair with the bar number instead of a (meaningless 1970) date.
+      localization: { timeFormatter: (t) => `bar ${t}` },
       grid: {
-        vertLines: { color: "#161a1f" },
-        horzLines: { color: "#161a1f" },
+        // Dimmer than the candles so price action pops (TradingView-like).
+        vertLines: { color: "rgba(124,136,150,0.045)" },
+        horzLines: { color: "rgba(124,136,150,0.055)" },
       },
-      timeScale: { borderColor: "#232830", timeVisible: false },
-      rightPriceScale: { borderColor: "#232830" },
+      crosshair: {
+        mode: CrosshairMode.Normal,      // free crosshair with floating axis labels
+        vertLine: { color: "rgba(154,165,177,0.4)", width: 1, style: 3, labelBackgroundColor: "#2b3646" },
+        horzLine: { color: "rgba(154,165,177,0.4)", width: 1, style: 3, labelBackgroundColor: "#2b3646" },
+      },
+      timeScale: {
+        borderColor: "#232830", timeVisible: false, rightOffset: 4, barSpacing: 9,
+        tickMarkFormatter: (t) => `${t}`,
+      },
+      rightPriceScale: { borderColor: "#232830", scaleMargins: { top: 0.08, bottom: 0.12 } },
+      // Smooth, TradingView-style zoom/pan with a little inertia.
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
+      kineticScroll: { touch: true, mouse: true },
       width: containerRef.current.clientWidth,
       height: 420,
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#3fb68b",
-      downColor: "#d9534f",
-      borderVisible: false,
-      wickUpColor: "#3fb68b",
-      wickDownColor: "#d9534f",
+      upColor: "#25a17b",
+      downColor: "#d54f4a",
+      borderVisible: true,               // subtle brighter border so candles pop
+      borderUpColor: "#35d69b",
+      borderDownColor: "#ff6b66",
+      wickUpColor: "#35d69b",
+      wickDownColor: "#ff6b66",
+    });
+
+    // Live OHLC legend: report the candle under the crosshair (falls back to the
+    // last candle when the cursor leaves the chart).
+    chart.subscribeCrosshairMove((param) => {
+      const d = param?.seriesData?.get(series);
+      setHoverBar(d && d.open != null
+        ? { open: d.open, high: d.high, low: d.low, close: d.close }
+        : null);
     });
 
     // Benchmark overlay (Phase 6): a faint correlated line on its own hidden
@@ -319,6 +349,7 @@ export default function App() {
       close: b.close,
     }));
     seriesRef.current.setData(slice);
+    lastCandleRef.current = slice.length ? slice[slice.length - 1] : null;
     // Benchmark overlay reveals in lockstep with the candles (Phase 6).
     if (refSeriesRef.current) {
       refSeriesRef.current.setData(
@@ -1743,6 +1774,23 @@ export default function App() {
 
       <div className="chart-wrap">
         <div className="chart-container" ref={containerRef} />
+        {(() => {
+          const b = hoverBar || lastCandleRef.current;
+          if (!b) return null;
+          const chg = b.close - b.open;
+          const pct = b.open ? (chg / b.open) * 100 : 0;
+          const cls = chg >= 0 ? "pnl-pos" : "pnl-neg";
+          return (
+            <div className="chart-legend">
+              <span className="cl-title">TAPE<span className="accent">//</span>RUN</span>
+              <span className="cl-ohlc">O<b className={cls}>{b.open.toFixed(2)}</b></span>
+              <span className="cl-ohlc">H<b className={cls}>{b.high.toFixed(2)}</b></span>
+              <span className="cl-ohlc">L<b className={cls}>{b.low.toFixed(2)}</b></span>
+              <span className="cl-ohlc">C<b className={cls}>{b.close.toFixed(2)}</b></span>
+              <span className={`cl-chg ${cls}`}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)} ({chg >= 0 ? "+" : ""}{pct.toFixed(2)}%)</span>
+            </div>
+          );
+        })()}
         {(openPositions.length > 0 || planning) && (
           <ChartTradeOverlay
             seriesRef={seriesRef}

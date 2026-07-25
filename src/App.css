@@ -1970,25 +1970,57 @@ body {
 }
 .risk-mode-btn:hover { border-color: var(--cyan); }
 
-.to-grip {
+/* Price-line label chips, pinned on the right price axis (TradingView-style). */
+.to-axis {
   position: absolute;
-  right: 8px;
+  right: 0;
   transform: translateY(-50%);
-  pointer-events: auto;
-  cursor: ns-resize;
-  padding: 2px 9px;
-  border-radius: 3px;
+  padding: 1px 6px;
+  border-radius: 2px;
   font-family: var(--mono);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   user-select: none;
-  touch-action: none;
   transition: filter 0.1s;
 }
-.to-grip:hover { filter: brightness(1.25); }
-.to-grip-sl { color: var(--bg); background: var(--red); }
-.to-grip-tp { color: var(--bg); background: var(--green); }
+.to-axis-entry { background: #2b3646; color: var(--text); }
+.to-axis-sl    { background: var(--red);   color: var(--bg); }
+.to-axis-tp    { background: var(--green); color: var(--bg); }
+.to-grip { pointer-events: auto; cursor: ns-resize; touch-action: none; }
+.to-grip:hover { filter: brightness(1.15); }
+
+/* Live OHLC legend, top-left of the chart. */
+.chart-legend {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: rgba(11, 14, 17, 0.72);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(3px);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.chart-legend .cl-title {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.chart-legend .accent { color: var(--green); }
+.chart-legend .cl-ohlc b { margin-left: 4px; font-weight: 700; }
+.chart-legend .cl-chg { font-weight: 700; }
+.chart-legend .pnl-pos { color: var(--green); }
+.chart-legend .pnl-neg { color: var(--red); }
 
 /* ── Paper trading (Phase 2) ─────────────────────────────────────────── */
 .paper-setup {

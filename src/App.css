@@ -2022,6 +2022,92 @@ body {
 .chart-legend .pnl-pos { color: var(--green); }
 .chart-legend .pnl-neg { color: var(--red); }
 
+/* ── Chart toolbar + replay bar (chart pass 2) ───────────────────────── */
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+.tf-bar, .scale-toggles { display: inline-flex; gap: 2px; }
+.tf-bar .tf-btn, .scale-btn {
+  padding: 4px 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.tf-bar .tf-btn:hover:not(:disabled), .scale-btn:hover { color: var(--text); background: var(--panel-raised); }
+.tf-bar .tf-btn.active, .scale-btn.active {
+  color: var(--green);
+  background: var(--green-soft);
+}
+.tf-bar .tf-btn:disabled { cursor: default; color: var(--text); }
+.scale-btn.active { color: var(--cyan); background: var(--cyan-soft); }
+
+.replay-bar {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.replay-play {
+  width: 34px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  border: 1px solid var(--line-bright);
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 12px;
+  cursor: pointer;
+  transition: filter 0.12s, background 0.12s;
+}
+.replay-play:hover { filter: brightness(1.15); }
+.replay-speeds { display: inline-flex; gap: 2px; }
+.replay-speed {
+  padding: 5px 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.replay-speed:hover { color: var(--text); background: var(--panel-raised); }
+.replay-speed.active { color: var(--text); background: var(--line-bright); }
+.replay-div { width: 1px; height: 20px; background: var(--line); }
+.replay-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.replay-count .rc-tag {
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  margin-right: 4px;
+}
+.replay-spacer { flex: 1; }
+
 /* ── Paper trading (Phase 2) ─────────────────────────────────────────── */
 .paper-setup {
   max-width: 640px;

@@ -115,6 +115,8 @@ export default function App() {
   // (the anchor timeframe's minutes for intraday, 1 otherwise).
   const [timeframes, setTimeframes] = useState([]);
   const [chartTf, setChartTf] = useState(null);
+  const [priceScaleLog, setPriceScaleLog] = useState(false);   // right axis: log vs linear
+  const [priceScaleAuto, setPriceScaleAuto] = useState(true);  // auto-fit price to view
   const [playbackStep, setPlaybackStep] = useState(1);
   // Intraday trading-session context (Phase 4): the session bands + minutes-per-day
   // let us show which session (Open/London/…) the current bar sits in. Live and
@@ -364,6 +366,13 @@ export default function App() {
       hasFitRef.current = true;
     }
   }, [visibleCount, allBars, chartTf, reference]);
+
+  // Right price-scale mode (log/linear + auto-fit) — TradingView-style toggles.
+  useEffect(() => {
+    const ps = chartRef.current?.priceScale("right");
+    if (!ps) return;
+    ps.applyOptions({ mode: priceScaleLog ? 1 : 0, autoScale: priceScaleAuto });
+  }, [priceScaleLog, priceScaleAuto, screen, session]);
 
   // playback loop (normal sessions — contest sessions use the reveal-driven loop)
   useEffect(() => {
@@ -1772,6 +1781,37 @@ export default function App() {
         </div>
       )}
 
+      <div className="chart-toolbar">
+        <div className="tf-bar" title="Chart timeframe">
+          {(timeframes.length > 1 ? timeframes : (chartTf ? [chartTf] : [])).map((tf) => (
+            <button
+              key={tf}
+              className={chartTf === tf ? "tf-btn active" : "tf-btn"}
+              onClick={() => setChartTf(tf)}
+              disabled={timeframes.length <= 1}
+            >
+              {tf}
+            </button>
+          ))}
+        </div>
+        <div className="scale-toggles">
+          <button
+            className={priceScaleAuto ? "scale-btn active" : "scale-btn"}
+            onClick={() => setPriceScaleAuto((a) => !a)}
+            title="Auto-fit the price axis to the visible range"
+          >
+            Auto
+          </button>
+          <button
+            className={priceScaleLog ? "scale-btn active" : "scale-btn"}
+            onClick={() => setPriceScaleLog((l) => !l)}
+            title="Logarithmic price scale"
+          >
+            Log
+          </button>
+        </div>
+      </div>
+
       <div className="chart-wrap">
         <div className="chart-container" ref={containerRef} />
         {(() => {
@@ -1916,38 +1956,34 @@ export default function App() {
       )}
 
       <div className="controls">
-        <div className="control-row">
+        <div className="control-row replay-bar">
           {!paper && (
             <>
-              <div className="speed-group">
+              <button
+                className="replay-play"
+                onClick={() => setPlaying((p) => !p)}
+                title={playing ? "Pause" : "Play"}
+              >
+                {playing ? "❚❚" : "▶"}
+              </button>
+              <div className="replay-speeds" title="Playback speed">
                 {SPEEDS.map((s) => (
                   <button
                     key={s.label}
-                    className={speed.label === s.label ? "speed-btn active" : "speed-btn"}
+                    className={speed.label === s.label ? "replay-speed active" : "replay-speed"}
                     onClick={() => setSpeed(s)}
                   >
                     {s.label}
                   </button>
                 ))}
               </div>
-              <button className="speed-btn" onClick={() => setPlaying((p) => !p)}>
-                {playing ? "Pause" : "Play"}
-              </button>
+              <span className="replay-div" />
             </>
           )}
-          {timeframes.length > 1 && (
-            <div className="tf-group" title="Chart timeframe">
-              {timeframes.map((tf) => (
-                <button
-                  key={tf}
-                  className={chartTf === tf ? "tf-btn active" : "tf-btn"}
-                  onClick={() => setChartTf(tf)}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
-          )}
+          <span className="replay-count">
+            <span className="rc-tag">BAR</span> {visibleCount}<span className="muted"> / {allBars.length}</span>
+          </span>
+          <span className="replay-spacer" />
           {currentSession && (
             <div className="session-chip" title="Current trading session">
               <span className="session-dot" /> {currentSession}
@@ -1958,9 +1994,6 @@ export default function App() {
               <span className="session-dot bench-dot" /> benchmark
             </div>
           )}
-          <div className="progress">
-            {visibleCount} / {allBars.length}
-          </div>
         </div>
 
         <div className="control-row">

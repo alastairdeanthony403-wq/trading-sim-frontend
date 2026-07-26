@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, CandlestickSeries, LineSeries, CrosshairMode } from "lightweight-charts";
+import { createChart, CandlestickSeries, LineSeries, HistogramSeries, CrosshairMode } from "lightweight-charts";
 import {
   listScenarios,
   startSession,
@@ -84,6 +84,7 @@ function aggregateBars(bars, mult) {
       high: Math.max(...g.map((x) => x.high)),
       low: Math.min(...g.map((x) => x.low)),
       close: g[g.length - 1].close,
+      volume: g.reduce((s, x) => s + (x.volume || 0), 0),
     });
   }
   return out;
@@ -194,6 +195,7 @@ export default function App() {
 
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
+  const volSeriesRef = useRef(null);             // volume histogram (own pane)
   const refSeriesRef = useRef(null);             // benchmark overlay line (Phase 6)
   const containerRef = useRef(null);
   const priceLinesRef = useRef([]);              // active chart lines
@@ -296,12 +298,23 @@ export default function App() {
       wickDownColor: "#ff6b66",
     });
 
+    // Volume histogram in its own pane under the price chart (TradingView-style),
+    // color-matched to candle direction.
+    const volSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: "volume" },
+      priceLineVisible: false,
+      lastValueVisible: false,
+    }, 1);
+    volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.15, bottom: 0 } });
+    try { chart.panes()[1]?.setHeight(90); } catch { /* older API — ignore */ }
+
     // Live OHLC legend: report the candle under the crosshair (falls back to the
     // last candle when the cursor leaves the chart).
     chart.subscribeCrosshairMove((param) => {
       const d = param?.seriesData?.get(series);
+      const v = param?.seriesData?.get(volSeries);
       setHoverBar(d && d.open != null
-        ? { open: d.open, high: d.high, low: d.low, close: d.close }
+        ? { open: d.open, high: d.high, low: d.low, close: d.close, volume: v?.value }
         : null);
     });
 
@@ -315,6 +328,7 @@ export default function App() {
 
     chartRef.current = chart;
     seriesRef.current = series;
+    volSeriesRef.current = volSeries;
     refSeriesRef.current = refSeries;
 
     const handleResize = () => {
@@ -343,7 +357,8 @@ export default function App() {
   useEffect(() => {
     if (!seriesRef.current || allBars.length === 0) return;
     const revealed = allBars.slice(0, visibleCount);
-    const slice = aggregateBars(revealed, tfMult(chartTf)).map((b) => ({
+    const agg = aggregateBars(revealed, tfMult(chartTf));
+    const slice = agg.map((b) => ({
       time: b.bar_sequence,
       open: b.open,
       high: b.high,
@@ -351,7 +366,17 @@ export default function App() {
       close: b.close,
     }));
     seriesRef.current.setData(slice);
-    lastCandleRef.current = slice.length ? slice[slice.length - 1] : null;
+    lastCandleRef.current = agg.length
+      ? { ...slice[slice.length - 1], volume: agg[agg.length - 1].volume }
+      : null;
+    // Volume histogram, color-matched to candle direction.
+    if (volSeriesRef.current) {
+      volSeriesRef.current.setData(agg.map((b) => ({
+        time: b.bar_sequence,
+        value: b.volume || 0,
+        color: b.close >= b.open ? "rgba(53,214,155,0.5)" : "rgba(255,107,102,0.5)",
+      })));
+    }
     // Benchmark overlay reveals in lockstep with the candles (Phase 6).
     if (refSeriesRef.current) {
       refSeriesRef.current.setData(
@@ -1828,6 +1853,9 @@ export default function App() {
               <span className="cl-ohlc">L<b className={cls}>{b.low.toFixed(2)}</b></span>
               <span className="cl-ohlc">C<b className={cls}>{b.close.toFixed(2)}</b></span>
               <span className={`cl-chg ${cls}`}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)} ({chg >= 0 ? "+" : ""}{pct.toFixed(2)}%)</span>
+              {b.volume != null && (
+                <span className="cl-vol">Vol <b>{b.volume >= 1000 ? `${(b.volume / 1000).toFixed(1)}k` : b.volume.toFixed(0)}</b></span>
+              )}
             </div>
           );
         })()}

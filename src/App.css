@@ -2019,6 +2019,8 @@ body {
 .chart-legend .accent { color: var(--green); }
 .chart-legend .cl-ohlc b { margin-left: 4px; font-weight: 700; }
 .chart-legend .cl-chg { font-weight: 700; }
+.chart-legend .cl-vol { color: var(--muted); }
+.chart-legend .cl-vol b { margin-left: 4px; color: var(--text); font-weight: 700; }
 .chart-legend .pnl-pos { color: var(--green); }
 .chart-legend .pnl-neg { color: var(--red); }
 

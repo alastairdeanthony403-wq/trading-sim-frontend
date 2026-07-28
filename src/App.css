@@ -174,9 +174,101 @@ body {
   flex-direction: column;
   justify-content: center;
   padding: 48px 40px;
-  max-width: 620px;
+  max-width: 900px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* ── Three modes: Career / Ranked / Paper trading ─────────────────────── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 18px 18px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line-bright);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+.mode-card:hover { transform: translateY(-3px); }
+.mode-card:active { transform: translateY(0); }
+.mode-tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--faint);
+}
+.mode-name {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.mode-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+  flex: 1;
+}
+.mode-meta {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+}
+.mode-career .mode-name { color: var(--green); }
+.mode-career:hover { border-color: var(--green); background: rgba(46,242,160,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(46,242,160,0.10); }
+.mode-ranked .mode-name { color: var(--amber); }
+.mode-ranked:hover { border-color: var(--amber); background: rgba(255,194,88,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(255,194,88,0.10); }
+.mode-paper .mode-name { color: var(--cyan); }
+.mode-paper:hover { border-color: var(--cyan); background: rgba(69,216,255,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(69,216,255,0.10); }
+
+.menu-howto { align-self: center; margin-top: 20px; }
+
+@media (max-width: 760px) {
+  .mode-grid { grid-template-columns: 1fr; }
+  .mode-desc { flex: none; }
+}
+
+/* Career hub: the four things that live inside Career mode. */
+.career-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 26px;
+}
+.career-action {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 15px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.08s;
+}
+.career-action:hover { border-color: var(--green); transform: translateY(-1px); }
+.career-action.primary { background: rgba(46,242,160,0.08); border-color: var(--green); }
+.career-action .ca-name { font-size: 13.5px; font-weight: 700; }
+.career-action.primary .ca-name { color: var(--green); }
+.career-action .ca-desc { font-size: 11.5px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .career-actions { grid-template-columns: 1fr; }
 }
 
 .menu-hero {

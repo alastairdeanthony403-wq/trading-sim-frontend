@@ -133,6 +133,7 @@ export default function App() {
   const [priceScaleAuto, setPriceScaleAuto] = useState(true);  // auto-fit price to view
   const [drawTool, setDrawTool] = useState("none");            // none|trendline|ray|rect
   const [drawings, setDrawings] = useState([]);                // shapes on the chart
+  const [modeError, setModeError] = useState("");              // career-gated mode refusal
   const [playbackStep, setPlaybackStep] = useState(1);
   // Intraday trading-session context (Phase 4): the session bands + minutes-per-day
   // let us show which session (Open/London/…) the current bar sits in. Live and
@@ -261,6 +262,15 @@ export default function App() {
   // Fund Manager mode is the level-6 "Fund Manager" career unlock.
   const fmUnlocked = (career?.level || 0) >= 6;
 
+  // Paper trading and Ranked are earned in Career. The server is the authority
+  // (it refuses to start a locked mode); until career loads we don't lock the UI
+  // rather than risk falsely blocking someone who has already unlocked it.
+  const modeLocked = (mode) => (career?.modes ? !career.modes[mode]?.unlocked : false);
+  const unlockNote = (mode) => {
+    const m = career?.modes?.[mode];
+    return m ? `Unlocks at ${m.min_level_name} · career level ${m.min_level}` : "Locked";
+  };
+
   const openProgress = useCallback(async () => {
     const p = await getProgress(getUserId());
     setProgressData(p);
@@ -285,6 +295,11 @@ export default function App() {
     const p = await getProgress(getUserId());
     setProgressData(p);
     setScreen("learn");
+  }, []);
+
+  const openPaper = useCallback(() => {
+    setPaperClk(null);
+    setScreen("paper_setup");
   }, []);
 
   // set up chart once when entering playing screen
@@ -611,6 +626,11 @@ export default function App() {
   const startPaperSession = useCallback(async (duration) => {
     setLoading(true);
     const s = await apiStartPaper(getUserId(), duration);
+    if (!s || s.error) {                            // e.g. still locked server-side
+      setModeError(s?.message || "Paper trading isn't unlocked yet.");
+      setLoading(false);
+      return;
+    }
     const bars = await getBars(s.session_id);       // warm-up block, server-capped
     try {
       const t = await getTools(getUserId());
@@ -1043,23 +1063,35 @@ export default function App() {
               </span>
             </button>
 
-            <button className="mode-card mode-ranked" onClick={openCompete}>
+            <button
+              className={`mode-card mode-ranked${modeLocked("ranked") ? " locked" : ""}`}
+              onClick={openCompete}
+              disabled={modeLocked("ranked")}
+            >
               <span className="mode-tag">MODE 02</span>
-              <span className="mode-name">Ranked</span>
+              <span className="mode-name">{modeLocked("ranked") ? "🔒 " : ""}Ranked</span>
               <span className="mode-desc">
                 Same market, same bars, everyone trades it blind. Weekly contests
                 and private leagues.
               </span>
-              <span className="mode-meta">Compete on the leaderboard</span>
+              <span className="mode-meta">
+                {modeLocked("ranked") ? unlockNote("ranked") : "Compete on the leaderboard"}
+              </span>
             </button>
 
-            <button className="mode-card mode-paper" onClick={() => { setPaperClk(null); setScreen("paper_setup"); }}>
+            <button
+              className={`mode-card mode-paper${modeLocked("paper") ? " locked" : ""}`}
+              onClick={openPaper}
+              disabled={modeLocked("paper")}
+            >
               <span className="mode-tag">MODE 03</span>
-              <span className="mode-name">Paper trading</span>
+              <span className="mode-name">{modeLocked("paper") ? "🔒 " : ""}Paper trading</span>
               <span className="mode-desc">
                 Practice reading a live market and executing a plan, risk-free.
               </span>
-              <span className="mode-meta">Free play · 5–60 min</span>
+              <span className="mode-meta">
+                {modeLocked("paper") ? unlockNote("paper") : "Free play · 5–60 min"}
+              </span>
             </button>
           </div>
           <button className="link-btn menu-howto" onClick={() => setScreen("howto")}>
@@ -1147,6 +1179,7 @@ export default function App() {
           >
             {loading ? "Preparing market…" : `Start ${paperDuration}-minute session`}
           </button>
+          {modeError && <div className="mode-error">🔒 {modeError}</div>}
         </main>
       </div>
     );
@@ -1343,6 +1376,26 @@ export default function App() {
             <button className="career-action" onClick={openProgress}>
               <span className="ca-name">Your progress</span>
               <span className="ca-desc">Lessons done, scores and history</span>
+            </button>
+            <button
+              className={`career-action${modeLocked("paper") ? " locked" : ""}`}
+              onClick={openPaper}
+              disabled={modeLocked("paper")}
+            >
+              <span className="ca-name">{modeLocked("paper") ? "🔒 " : ""}Paper trading</span>
+              <span className="ca-desc">
+                {modeLocked("paper") ? unlockNote("paper") : "Free practice on a live market, 5–60 min"}
+              </span>
+            </button>
+            <button
+              className={`career-action${modeLocked("ranked") ? " locked" : ""}`}
+              onClick={openCompete}
+              disabled={modeLocked("ranked")}
+            >
+              <span className="ca-name">{modeLocked("ranked") ? "🔒 " : ""}Ranked</span>
+              <span className="ca-desc">
+                {modeLocked("ranked") ? unlockNote("ranked") : "Weekly contests and private leagues"}
+              </span>
             </button>
           </div>
 

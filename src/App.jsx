@@ -267,6 +267,26 @@ export default function App() {
     setScreen("progress");
   }, []);
 
+  // Career is the hub for scenarios, missions, lessons and progress, so several
+  // screens come back to it — always with fresh career state.
+  const openCareer = useCallback(async () => {
+    try { setCareer(await getCareer(getUserId())); } catch { /* keep last known */ }
+    setScreen("career");
+  }, []);
+
+  const openMissions = useCallback(async () => {
+    const [ms, d] = await Promise.all([getMissions(), getDailyMission(getUserId())]);
+    setMissions(ms || []);
+    setDaily(d || null);
+    setScreen("missions");
+  }, []);
+
+  const openLearn = useCallback(async () => {
+    const p = await getProgress(getUserId());
+    setProgressData(p);
+    setScreen("learn");
+  }, []);
+
   // set up chart once when entering playing screen
   useEffect(() => {
     if (screen !== "playing" || !containerRef.current) return;
@@ -1010,44 +1030,41 @@ export default function App() {
             <div className="boot-line">scoring <span className="ok">ONLINE</span> — risk-adjusted, not raw P&amp;L</div>
             <div className="boot-line">awaiting operator input<span className="cursor" /></div>
           </div>
-          <div className="menu-buttons">
-            <button className="menu-btn menu-btn-primary" onClick={() => setScreen("select")}>
-              Play a scenario
+          <div className="mode-grid">
+            <button className="mode-card mode-career" onClick={openCareer}>
+              <span className="mode-tag">MODE 01</span>
+              <span className="mode-name">Career</span>
+              <span className="mode-desc">
+                Learn, train and climb the ladder. Scenarios, missions, lessons and
+                your progress all live here.
+              </span>
+              <span className="mode-meta">
+                {career ? `Level ${career.level} · ${career.name}` : "Your main path"}
+              </span>
             </button>
-            <button className="menu-btn" onClick={async () => {
-              const [ms, d] = await Promise.all([getMissions(), getDailyMission(getUserId())]);
-              setMissions(ms || []);
-              setDaily(d || null);
-              setScreen("missions");
-            }}>
-              Missions &amp; daily challenge
+
+            <button className="mode-card mode-ranked" onClick={openCompete}>
+              <span className="mode-tag">MODE 02</span>
+              <span className="mode-name">Ranked</span>
+              <span className="mode-desc">
+                Same market, same bars, everyone trades it blind. Weekly contests
+                and private leagues.
+              </span>
+              <span className="mode-meta">Compete on the leaderboard</span>
             </button>
-            <button className="menu-btn" onClick={async () => {
-              const p = await getProgress(getUserId());
-              setProgressData(p);
-              setScreen("learn");
-            }}>
-              Learn to trade
-            </button>
-            <button className="menu-btn" onClick={async () => {
-              setCareer(await getCareer(getUserId()));
-              setScreen("career");
-            }}>
-              Career
-            </button>
-            <button className="menu-btn" onClick={openCompete}>
-              Compete
-            </button>
-            <button className="menu-btn" onClick={() => { setPaperClk(null); setScreen("paper_setup"); }}>
-              Paper trading
-            </button>
-            <button className="menu-btn" onClick={openProgress}>
-              Your progress
-            </button>
-            <button className="menu-btn" onClick={() => setScreen("howto")}>
-              How it works
+
+            <button className="mode-card mode-paper" onClick={() => { setPaperClk(null); setScreen("paper_setup"); }}>
+              <span className="mode-tag">MODE 03</span>
+              <span className="mode-name">Paper trading</span>
+              <span className="mode-desc">
+                Practice reading a live market and executing a plan, risk-free.
+              </span>
+              <span className="mode-meta">Free play · 5–60 min</span>
             </button>
           </div>
+          <button className="link-btn menu-howto" onClick={() => setScreen("howto")}>
+            How it works
+          </button>
         </main>
       </div>
     );
@@ -1057,7 +1074,7 @@ export default function App() {
     return (
       <Learn
         progressData={progressData}
-        onExit={() => setScreen("menu")}
+        onExit={openCareer}
         onScenarioCheck={startScenarioCheck}
         scenarioOutcome={scenarioOutcome}
         onScenarioConsumed={() => setScenarioOutcome(null)}
@@ -1143,7 +1160,7 @@ export default function App() {
           <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
         </header>
         <main className="compete">
-          <h2>Compete</h2>
+          <h2>Ranked</h2>
 
           <div className="name-card">
             <label className="name-label">Display name (your leaderboard identity)</label>
@@ -1265,7 +1282,7 @@ export default function App() {
             </div>
           ) : (
             <p className="muted">
-              {savedName ? "Entry recorded." : "Practice run — set a display name on the Compete screen to post a scored entry."}
+              {savedName ? "Entry recorded." : "Practice run — set a display name on the Ranked screen to post a scored entry."}
             </p>
           )}
           {r && r.already_entered && (
@@ -1283,7 +1300,7 @@ export default function App() {
               ))}
             </tbody>
           </table>
-          <button className="primary-btn" style={{ marginTop: 18 }} onClick={openCompete}>Back to Compete</button>
+          <button className="primary-btn" style={{ marginTop: 18 }} onClick={openCompete}>Back to Ranked</button>
           <button className="menu-btn" style={{ marginLeft: 12 }} onClick={() => setScreen("menu")}>Menu</button>
         </main>
       </div>
@@ -1308,6 +1325,25 @@ export default function App() {
           <h2 style={{ margin: "4px 0 6px" }}>{career.name}</h2>
           <div className="mono muted" style={{ marginBottom: 18 }}>
             Level {career.level} of 7 · advancement is earned by skill and discipline, never profit
+          </div>
+
+          <div className="career-actions">
+            <button className="career-action primary" onClick={() => setScreen("select")}>
+              <span className="ca-name">Play a scenario</span>
+              <span className="ca-desc">Trade a blind market and get scored</span>
+            </button>
+            <button className="career-action" onClick={openMissions}>
+              <span className="ca-name">Missions &amp; daily challenge</span>
+              <span className="ca-desc">Rule-based objectives that build discipline</span>
+            </button>
+            <button className="career-action" onClick={openLearn}>
+              <span className="ca-name">Learn to trade</span>
+              <span className="ca-desc">Lessons with live practice checks</span>
+            </button>
+            <button className="career-action" onClick={openProgress}>
+              <span className="ca-name">Your progress</span>
+              <span className="ca-desc">Lessons done, scores and history</span>
+            </button>
           </div>
 
           {career.next ? (
@@ -1366,7 +1402,7 @@ export default function App() {
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
-          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+          <button className="link-btn" onClick={openCareer}>← Career</button>
         </header>
         <main className="howto">
           <h2>Your progress</h2>
@@ -1537,7 +1573,7 @@ export default function App() {
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
-          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+          <button className="link-btn" onClick={openCareer}>← Career</button>
         </header>
         <main className="howto">
           <h2>Missions</h2>
@@ -1582,7 +1618,7 @@ export default function App() {
       <div className="app">
         <header className="header">
           <div className="logo">TAPE//RUN</div>
-          <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
+          <button className="link-btn" onClick={openCareer}>← Career</button>
         </header>
         {fmUnlocked && (
           <div className="fm-bar">

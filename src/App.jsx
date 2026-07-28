@@ -44,6 +44,7 @@ import { addXp } from "./xp";
 import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
 import ChartTradeOverlay from "./ChartTradeOverlay";
+import ChartDrawings from "./ChartDrawings";
 import "./App.css";
 
 const SPEEDS = [
@@ -118,6 +119,8 @@ export default function App() {
   const [chartTf, setChartTf] = useState(null);
   const [priceScaleLog, setPriceScaleLog] = useState(false);   // right axis: log vs linear
   const [priceScaleAuto, setPriceScaleAuto] = useState(true);  // auto-fit price to view
+  const [drawTool, setDrawTool] = useState("none");            // none|trendline|ray|rect
+  const [drawings, setDrawings] = useState([]);                // shapes on the chart
   const [playbackStep, setPlaybackStep] = useState(1);
   // Intraday trading-session context (Phase 4): the session bands + minutes-per-day
   // let us show which session (Open/London/…) the current bar sits in. Live and
@@ -349,6 +352,11 @@ export default function App() {
   useEffect(() => {
     hasFitRef.current = false;
   }, [session, chartTf]);
+
+  // Drawings are per-session — clear them when a new scenario opens.
+  useEffect(() => {
+    setDrawings([]); setDrawTool("none");
+  }, [session]);
 
   // push visible bars to chart whenever visibleCount / timeframe changes.
   // allBars is always the BASE (1m for intraday) series; for a coarser timeframe
@@ -1837,6 +1845,42 @@ export default function App() {
         </div>
       </div>
 
+      <div className="chart-stage">
+        <div className="draw-toolbar">
+          {[
+            { id: "none", tip: "Cursor", icon: <path d="M4 2l9 6-4 0.8-1.7 4z" fill="currentColor" stroke="none" /> },
+            { id: "trendline", tip: "Trendline", icon: <><line x1="3" y1="13" x2="13" y2="3" /><circle cx="3" cy="13" r="1.6" fill="currentColor" stroke="none" /><circle cx="13" cy="3" r="1.6" fill="currentColor" stroke="none" /></> },
+            { id: "ray", tip: "Horizontal ray", icon: <><line x1="3" y1="8" x2="14" y2="8" /><circle cx="3" cy="8" r="1.6" fill="currentColor" stroke="none" /></> },
+            { id: "rect", tip: "Rectangle", icon: <rect x="3" y="4.5" width="10" height="7" /> },
+          ].map((t) => (
+            <button
+              key={t.id}
+              className={drawTool === t.id ? "draw-btn active" : "draw-btn"}
+              onClick={() => setDrawTool(t.id)}
+              title={t.tip}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">{t.icon}</svg>
+            </button>
+          ))}
+          <span className="draw-div" />
+          <button
+            className="draw-btn"
+            onClick={() => setDrawings((d) => d.slice(0, -1))}
+            disabled={drawings.length === 0}
+            title="Undo last drawing"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M6 5L3 8l3 3" /><path d="M3 8h6a4 4 0 110 8" /></svg>
+          </button>
+          <button
+            className="draw-btn"
+            onClick={() => { setDrawings([]); setDrawTool("none"); }}
+            disabled={drawings.length === 0}
+            title="Clear all drawings"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M3 4h10M6 4V2.5h4V4M5 4l0.8 9.5h4.4L15 4" /></svg>
+          </button>
+        </div>
+
       <div className="chart-wrap">
         <div className="chart-container" ref={containerRef} />
         {(() => {
@@ -1874,6 +1918,15 @@ export default function App() {
             } : null}
           />
         )}
+        <ChartDrawings
+          chartRef={chartRef}
+          seriesRef={seriesRef}
+          tool={drawTool}
+          drawings={drawings}
+          setDrawings={setDrawings}
+          onToolConsumed={() => setDrawTool("none")}
+        />
+      </div>
       </div>
 
       {paper && paper.phase === "analysis" && (

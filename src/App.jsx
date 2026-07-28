@@ -57,7 +57,19 @@ const SPEEDS = [
 // (bar_provider.TF_MINUTES). Intraday scenarios store a 1-minute base series and
 // the chart aggregates it to any coarser timeframe for display.
 const TF_MINUTES = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240 };
-const tfMult = (tf) => TF_MINUTES[tf] || 1;
+// Daily-based scenarios store one bar per day, so coarser views are just bar
+// multiples (a week ≈ 5 sessions, a month ≈ 21). Display-only aggregation of
+// already-revealed bars — same as the intraday path, so nothing leaks.
+const TF_DAYS = { "1D": 1, "1W": 5, "1M": 21 };
+const DAILY_TFS = ["1D", "1W", "1M"];
+const tfMult = (tf) => TF_MINUTES[tf] || TF_DAYS[tf] || 1;
+
+// Which timeframes the chart can offer: whatever the scenario advertises for
+// intraday, or the daily multiples when it only ships a single 1D series.
+function tfListFor(tfs, base) {
+  if (tfs.length > 1) return tfs;
+  return (base || tfs[0]) === "1D" ? DAILY_TFS : [];
+}
 
 // mm:ss for the paper-trading live countdown.
 function fmtClock(secs) {
@@ -201,6 +213,7 @@ export default function App() {
   const volSeriesRef = useRef(null);             // volume histogram (own pane)
   const refSeriesRef = useRef(null);             // benchmark overlay line (Phase 6)
   const containerRef = useRef(null);
+  const chartWrapRef = useRef(null);             // hit-test surface for drawings
   const priceLinesRef = useRef([]);              // active chart lines
   const lastCandleRef = useRef(null);            // last displayed candle (legend default)
   const [hoverBar, setHoverBar] = useState(null); // candle under the crosshair (OHLC box)
@@ -288,7 +301,7 @@ export default function App() {
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
       kineticScroll: { touch: true, mouse: true },
       width: containerRef.current.clientWidth,
-      height: 420,
+      height: containerRef.current.clientHeight || 420,
     });
 
     const series = chart.addSeries(CandlestickSeries, {
@@ -334,13 +347,17 @@ export default function App() {
     volSeriesRef.current = volSeries;
     refSeriesRef.current = refSeries;
 
-    const handleResize = () => {
-      chart.applyOptions({ width: containerRef.current.clientWidth });
-    };
-    window.addEventListener("resize", handleResize);
+    // Fill whatever space the layout gives us (the terminal is full-screen, so
+    // this tracks the container rather than just the window).
+    const el = containerRef.current;
+    const fit = () => chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    window.addEventListener("resize", fit);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
       chart.remove();
     };
   }, [screen]);
@@ -586,7 +603,7 @@ export default function App() {
     setPaperClk(null);
     try { localStorage.setItem("tape_run_paper_session", String(s.session_id)); } catch { /* ignore */ }
     const tfs = s.available_timeframes || [];
-    setTimeframes(tfs.length > 1 ? tfs : []);
+    setTimeframes(tfListFor(tfs, s.base_timeframe));
     setChartTf(s.anchor_tf || s.base_timeframe);
     setPlaybackStep(1); setSessionBands([]); setBarsPerDay(0); setReference([]);
     setAllBars(bars); setVisibleCount(bars.length);
@@ -735,7 +752,7 @@ export default function App() {
     // worth of base (1m) bars. Single-timeframe scenarios keep 1-bar steps.
     const tfs = s.available_timeframes || [];
     const anchor = s.anchor_tf || s.base_timeframe || (tfs[0] || null);
-    setTimeframes(tfs.length > 1 ? tfs : []);
+    setTimeframes(tfListFor(tfs, s.base_timeframe));
     setChartTf(anchor);
     setPlaybackStep(tfs.length > 1 && s.anchor_tf ? tfMult(s.anchor_tf) : 1);
     setSessionBands(s.session_bands || []);
@@ -1784,7 +1801,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app app-terminal">
       <header className="header">
         <div className="logo">TAPE//RUN</div>
         <div className="balance">
@@ -1881,7 +1898,7 @@ export default function App() {
           </button>
         </div>
 
-      <div className="chart-wrap">
+      <div className={`chart-wrap${drawTool !== "none" ? " placing" : ""}`} ref={chartWrapRef}>
         <div className="chart-container" ref={containerRef} />
         {(() => {
           const b = hoverBar || lastCandleRef.current;
@@ -1921,6 +1938,7 @@ export default function App() {
         <ChartDrawings
           chartRef={chartRef}
           seriesRef={seriesRef}
+          wrapRef={chartWrapRef}
           tool={drawTool}
           drawings={drawings}
           setDrawings={setDrawings}

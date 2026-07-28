@@ -1879,7 +1879,7 @@ body {
 }
 
 /* ── Interactive trade overlay (Phase 3) ─────────────────────────────── */
-.chart-wrap { position: relative; }
+.chart-wrap { position: relative; flex: 1; min-width: 0; }
 .trade-overlay {
   position: absolute;
   inset: 0;
@@ -2109,6 +2109,45 @@ body {
   margin-right: 4px;
 }
 .replay-spacer { flex: 1; }
+
+/* ── Drawing tools (chart pass 4) ────────────────────────────────────── */
+.chart-stage { display: flex; align-items: stretch; gap: 6px; }
+.draw-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.draw-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.draw-btn:hover:not(:disabled) { color: var(--text); background: var(--panel-raised); }
+.draw-btn.active { color: var(--cyan); background: var(--cyan-soft); border-color: var(--cyan); }
+.draw-btn:disabled { opacity: 0.35; cursor: default; }
+.draw-div { width: 18px; height: 1px; background: var(--line); margin: 3px 0; }
+
+.draw-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.draw-layer.active { pointer-events: auto; cursor: crosshair; }
 
 /* ── Paper trading (Phase 2) ─────────────────────────────────────────── */
 .paper-setup {

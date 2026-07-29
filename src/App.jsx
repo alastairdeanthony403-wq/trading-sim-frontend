@@ -47,6 +47,7 @@ import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
 import ChartTradeOverlay from "./ChartTradeOverlay";
 import ChartDrawings from "./ChartDrawings";
+import { C, alpha, chartLayout, candleColors } from "./chartTheme";
 import "./App.css";
 
 const SPEEDS = [
@@ -377,31 +378,22 @@ export default function App() {
   useEffect(() => {
     if (screen !== "playing" || !containerRef.current) return;
 
+    const base = chartLayout();
     const chart = createChart(containerRef.current, {
-      layout: {
-        background: { color: "#0b0e11" },
-        textColor: "#9aa5b1",
-        fontFamily: "'JetBrains Mono', monospace",
-        attributionLogo: false,          // TAPE//RUN branding, not TradingView's
-      },
+      ...base,
       // Bars are indexed, not dated — this is a blind sim, so label the time axis
       // and crosshair with the bar number instead of a (meaningless 1970) date.
       localization: { timeFormatter: (t) => `bar ${t}` },
-      grid: {
-        // Dimmer than the candles so price action pops (TradingView-like).
-        vertLines: { color: "rgba(124,136,150,0.045)" },
-        horzLines: { color: "rgba(124,136,150,0.055)" },
-      },
       crosshair: {
         mode: CrosshairMode.Normal,      // free crosshair with floating axis labels
-        vertLine: { color: "rgba(154,165,177,0.4)", width: 1, style: 3, labelBackgroundColor: "#2b3646" },
-        horzLine: { color: "rgba(154,165,177,0.4)", width: 1, style: 3, labelBackgroundColor: "#2b3646" },
+        vertLine: { color: alpha(C.muted, 0.45), width: 1, style: 3, labelBackgroundColor: C.lineBright },
+        horzLine: { color: alpha(C.muted, 0.45), width: 1, style: 3, labelBackgroundColor: C.lineBright },
       },
       timeScale: {
-        borderColor: "#232830", timeVisible: false, rightOffset: 4, barSpacing: 9,
+        ...base.timeScale, timeVisible: false, rightOffset: 4, barSpacing: 9,
         tickMarkFormatter: (t) => `${t}`,
       },
-      rightPriceScale: { borderColor: "#232830", scaleMargins: { top: 0.08, bottom: 0.12 } },
+      rightPriceScale: { ...base.rightPriceScale, scaleMargins: { top: 0.08, bottom: 0.12 } },
       // Smooth, TradingView-style zoom/pan with a little inertia.
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
@@ -410,15 +402,7 @@ export default function App() {
       height: containerRef.current.clientHeight || 420,
     });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#25a17b",
-      downColor: "#d54f4a",
-      borderVisible: true,               // subtle brighter border so candles pop
-      borderUpColor: "#35d69b",
-      borderDownColor: "#ff6b66",
-      wickUpColor: "#35d69b",
-      wickDownColor: "#ff6b66",
-    });
+    const series = chart.addSeries(CandlestickSeries, candleColors);
 
     // Volume histogram in its own pane under the price chart (TradingView-style),
     // color-matched to candle direction.
@@ -443,7 +427,7 @@ export default function App() {
     // Benchmark overlay (Phase 6): a faint correlated line on its own hidden
     // scale so its absolute level doesn't distort the price axis.
     const refSeries = chart.addSeries(LineSeries, {
-      color: "#6ea8fe", lineWidth: 1, priceScaleId: "ref",
+      color: C.benchmark, lineWidth: 1, priceScaleId: "ref",
       lastValueVisible: false, priceLineVisible: false,
     });
     chart.priceScale("ref").applyOptions({ visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } });
@@ -505,7 +489,7 @@ export default function App() {
       volSeriesRef.current.setData(agg.map((b) => ({
         time: b.bar_sequence,
         value: b.volume || 0,
-        color: b.close >= b.open ? "rgba(53,214,155,0.5)" : "rgba(255,107,102,0.5)",
+        color: b.close >= b.open ? alpha(C.green, 0.45) : alpha(C.red, 0.45),
       })));
     }
     // Benchmark overlay reveals in lockstep with the candles (Phase 6).
@@ -840,9 +824,9 @@ export default function App() {
       // Open positions are drawn by the interactive ChartTradeOverlay (Phase 3);
       // only resting orders use static price lines here.
       if (p.status === "pending") {
-        add(p.entry_order_price, "#e0a10a", `${p.order_type} ${tag}`);
-        add(p.stop_loss, "#d9534f", "SL");
-        add(p.take_profit, "#3fb68b", "TP");
+        add(p.entry_order_price, C.amber, `${p.order_type} ${tag}`);
+        add(p.stop_loss, C.red, "SL");
+        add(p.take_profit, C.green, "TP");
       }
     }
   }, [positions, screen]);
@@ -2524,9 +2508,9 @@ function EquitySparkline({ curve, start }) {
       <h3 className="section-label">Equity curve</h3>
       <svg className="pm-sparkline" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         {min < 0 && (
-          <line x1={pad} y1={zeroY} x2={W - pad} y2={zeroY} stroke="#3a4452" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1={pad} y1={zeroY} x2={W - pad} y2={zeroY} stroke={C.lineBright} strokeDasharray="3 3" strokeWidth="1" />
         )}
-        <path d={d} fill="none" stroke="#d9534f" strokeWidth="2" />
+        <path d={d} fill="none" stroke={C.red} strokeWidth="2" />
       </svg>
     </div>
   );

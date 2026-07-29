@@ -1,27 +1,76 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
-/* ============ TOKENS ============ */
+/* ============ DESIGN TOKENS ============
+   Three tiers: brand (raw hues) → semantic (purpose) → component (local, in the
+   rules below). Colours are OKLCH so lightness steps read evenly to the eye —
+   nudging --l-panel by 2% looks like 2% everywhere, which plain hex doesn't give
+   you. Alpha variants are derived with color-mix() rather than hand-written
+   rgba(), so a hue change propagates to every tint automatically.
+
+   This is a trading terminal: it is deliberately dark-only, and green/red carry
+   meaning (long/short, profit/loss), so they are never used for decoration. */
 :root {
-  --bg: #060809;
-  --panel: #0c1116;
-  --panel-raised: #111820;
-  --line: #1c2430;
-  --line-bright: #2b3646;
-  --green: #2ef2a0;
-  --green-soft: rgba(46, 242, 160, 0.14);
-  --green-glow: rgba(46, 242, 160, 0.3);
-  --red: #ff5f5c;
-  --red-soft: rgba(255, 95, 92, 0.14);
-  --amber: #ffc258;
-  --amber-soft: rgba(255, 194, 88, 0.14);
-  --cyan: #45d8ff;
-  --cyan-soft: rgba(69, 216, 255, 0.14);
-  --violet: #a78bfa;
-  --violet-soft: rgba(167, 139, 250, 0.14);
-  --text: #e2e9f0;
-  --dim: #76839244;
-  --muted: #7d8896;
-  --faint: #49535f;
+  /* ── Tier 1: brand hues ─────────────────────────────────────────────── */
+  --hue-neutral: 250;          /* cool slate — chrome, panels, text */
+  --hue-long: 158;             /* green — long / profit / pass */
+  --hue-short: 22;             /* red — short / loss / fail */
+  --hue-warn: 78;              /* amber — locked, caution, pending */
+  --hue-info: 225;             /* cyan — tools, planning, neutral accent */
+  --hue-accent: 288;           /* violet — rare highlights */
+
+  /* Surface lightness ramp — one place to re-tune the whole app's depth. */
+  --l-bg: 12.5%;
+  --l-panel: 17%;
+  --l-raised: 21%;
+  --l-line: 27%;
+  --l-line-bright: 36%;
+
+  /* ── Tier 2: semantic surfaces ──────────────────────────────────────── */
+  --bg: oklch(var(--l-bg) 0.014 var(--hue-neutral));
+  --panel: oklch(var(--l-panel) 0.017 var(--hue-neutral));
+  --panel-raised: oklch(var(--l-raised) 0.021 var(--hue-neutral));
+  --line: oklch(var(--l-line) 0.023 var(--hue-neutral));
+  --line-bright: oklch(var(--l-line-bright) 0.03 var(--hue-neutral));
+
+  /* Text ramp — four steps, each a clear jump in emphasis. */
+  --text: oklch(94% 0.012 var(--hue-neutral));
+  --muted: oklch(70% 0.022 var(--hue-neutral));
+  --faint: oklch(53% 0.022 var(--hue-neutral));
+  --dim: oklch(53% 0.022 var(--hue-neutral) / 0.28);
+
+  /* ── Tier 2: semantic status colours ────────────────────────────────── */
+  --green: oklch(80% 0.19 var(--hue-long));
+  --red: oklch(68% 0.19 var(--hue-short));
+  --amber: oklch(84% 0.15 var(--hue-warn));
+  --cyan: oklch(82% 0.13 var(--hue-info));
+  --violet: oklch(74% 0.15 var(--hue-accent));
+
+  /* Benchmark overlay is its own meaning (a correlated instrument), so it gets
+     its own token rather than borrowing a status colour. */
+  --benchmark: oklch(74% 0.13 258);
+  --orange: oklch(76% 0.16 50);          /* gradient partner for amber */
+
+  /* Tints + glows, derived so they can never drift from their base colour. */
+  --green-soft: color-mix(in oklab, var(--green) 15%, transparent);
+  --green-glow: color-mix(in oklab, var(--green) 32%, transparent);
+  --red-soft: color-mix(in oklab, var(--red) 15%, transparent);
+  --amber-soft: color-mix(in oklab, var(--amber) 15%, transparent);
+  --cyan-soft: color-mix(in oklab, var(--cyan) 15%, transparent);
+  --violet-soft: color-mix(in oklab, var(--violet) 15%, transparent);
+
+  /* Lifted variants for the two-stop gradients on primary actions. */
+  --green-lift: oklch(90% 0.13 var(--hue-long));
+  --amber-lift: oklch(92% 0.09 var(--hue-warn));
+
+  /* ── Tier 2: elevation, radius, focus ───────────────────────────────── */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --shadow-md: 0 4px 14px oklch(0% 0 0 / 0.45);
+  --shadow-lg: 0 10px 30px oklch(0% 0 0 / 0.5);
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --focus-ring: oklch(82% 0.13 var(--hue-info) / 0.65);
+
   --mono: 'JetBrains Mono', monospace;
   --display: 'Space Grotesk', sans-serif;
 }
@@ -37,13 +86,28 @@ html, body, #root {
 body {
   font-family: var(--mono);
   color: var(--text);
+  /* Ambient glow + faint grid, all derived from the brand hues so re-tuning a
+     hue token restyles the backdrop too. */
   background:
-    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(46, 242, 160, 0.07), transparent 60%),
-    radial-gradient(ellipse 80% 60% at 90% 100%, rgba(167, 139, 250, 0.05), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 5% 90%, rgba(69, 216, 255, 0.045), transparent 55%),
-    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(120, 145, 170, 0.035) 40px),
-    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(120, 145, 170, 0.035) 40px),
+    radial-gradient(ellipse 120% 80% at 50% -10%,
+      color-mix(in oklab, var(--green) 8%, transparent), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 90% 100%,
+      color-mix(in oklab, var(--violet) 6%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 5% 90%,
+      color-mix(in oklab, var(--cyan) 5%, transparent), transparent 55%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px,
+      oklch(70% 0.02 var(--hue-neutral) / 0.04) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px,
+      oklch(70% 0.02 var(--hue-neutral) / 0.04) 40px),
     var(--bg);
+}
+
+/* Keyboard accessibility: the app had no visible focus state, so tabbing was
+   invisible. One ring token, applied only for keyboard users. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .app {
@@ -153,18 +217,18 @@ body {
 
 .primary-btn {
   background: var(--green);
-  color: #04120c;
+  color: var(--bg);
   border: none;
   padding: 13px 26px;
   font-weight: 800;
   font-size: 13px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  box-shadow: 0 0 0 1px rgba(61,220,151,0.4), 0 4px 18px var(--green-glow);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 40%, transparent), 0 4px 18px var(--green-glow);
 }
 
-.primary-btn:hover { box-shadow: 0 0 0 1px rgba(61,220,151,0.7), 0 6px 26px var(--green-glow); }
-.primary-btn:active { transform: translateY(2px); box-shadow: 0 0 0 1px rgba(61,220,151,0.4); }
+.primary-btn:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 70%, transparent), 0 6px 26px var(--green-glow); }
+.primary-btn:active { transform: translateY(2px); box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 40%, transparent); }
 
 /* ============ MENU (boot screen) ============ */
 
@@ -227,11 +291,11 @@ body {
   color: var(--faint);
 }
 .mode-career .mode-name { color: var(--green); }
-.mode-career:hover { border-color: var(--green); background: rgba(46,242,160,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(46,242,160,0.10); }
+.mode-career:hover { border-color: var(--green); background: color-mix(in oklab, var(--green) 7%, transparent); box-shadow: 0 10px 30px oklch(0% 0 0 / 0.5), 0 0 22px color-mix(in oklab, var(--green) 10%, transparent); }
 .mode-ranked .mode-name { color: var(--amber); }
-.mode-ranked:hover { border-color: var(--amber); background: rgba(255,194,88,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(255,194,88,0.10); }
+.mode-ranked:hover { border-color: var(--amber); background: color-mix(in oklab, var(--amber) 7%, transparent); box-shadow: 0 10px 30px oklch(0% 0 0 / 0.5), 0 0 22px color-mix(in oklab, var(--amber) 10%, transparent); }
 .mode-paper .mode-name { color: var(--cyan); }
-.mode-paper:hover { border-color: var(--cyan); background: rgba(69,216,255,0.07); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 22px rgba(69,216,255,0.10); }
+.mode-paper:hover { border-color: var(--cyan); background: color-mix(in oklab, var(--cyan) 7%, transparent); box-shadow: 0 10px 30px oklch(0% 0 0 / 0.5), 0 0 22px color-mix(in oklab, var(--cyan) 10%, transparent); }
 
 /* Locked modes stay visible so players can see what they're working toward. */
 .mode-card.locked, .career-action.locked {
@@ -285,7 +349,7 @@ body {
   transition: border-color 0.12s, background 0.12s, transform 0.08s;
 }
 .career-action:hover { border-color: var(--green); transform: translateY(-1px); }
-.career-action.primary { background: rgba(46,242,160,0.08); border-color: var(--green); }
+.career-action.primary { background: color-mix(in oklab, var(--green) 8%, transparent); border-color: var(--green); }
 .career-action .ca-name { font-size: 13.5px; font-weight: 700; }
 .career-action.primary .ca-name { color: var(--green); }
 .career-action .ca-desc { font-size: 11.5px; color: var(--muted); }
@@ -300,7 +364,7 @@ body {
   font-weight: 700;
   letter-spacing: 2px;
   margin: 0 0 6px;
-  background: linear-gradient(100deg, #eafff5 15%, var(--green) 45%, var(--cyan) 80%);
+  background: linear-gradient(100deg, var(--green-lift) 15%, var(--green) 45%, var(--cyan) 80%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -371,7 +435,7 @@ body {
 .menu-btn:hover {
   border-color: var(--green);
   background: var(--panel-raised);
-  box-shadow: inset 3px 0 0 var(--green), 0 0 20px rgba(61,220,151,0.08);
+  box-shadow: inset 3px 0 0 var(--green), 0 0 20px color-mix(in oklab, var(--green) 8%, transparent);
 }
 
 .menu-btn:hover::before { color: var(--green); }
@@ -383,11 +447,11 @@ body {
   color: var(--green);
   font-weight: 800;
   text-transform: uppercase;
-  box-shadow: inset 3px 0 0 var(--green), 0 0 24px rgba(61,220,151,0.1);
+  box-shadow: inset 3px 0 0 var(--green), 0 0 24px color-mix(in oklab, var(--green) 10%, transparent);
 }
 
 .menu-btn-primary::before { color: var(--green); }
-.menu-btn-primary:hover { background: rgba(61,220,151,0.18); }
+.menu-btn-primary:hover { background: color-mix(in oklab, var(--green) 18%, transparent); }
 
 /* ============ PANELS (shared) ============ */
 
@@ -465,7 +529,7 @@ body {
 .scenario-card:hover {
   border-color: var(--green);
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 22px rgba(61,220,151,0.09);
+  box-shadow: 0 8px 28px oklch(0% 0 0 / 0.5), 0 0 22px color-mix(in oklab, var(--green) 9%, transparent);
 }
 
 .scenario-card:active { transform: translateY(0); }
@@ -550,7 +614,7 @@ body {
   border-color: var(--green);
   color: var(--green);
   background: var(--green-soft);
-  box-shadow: 0 0 14px rgba(61,220,151,0.12);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--green) 12%, transparent);
 }
 
 /* Multi-timeframe switcher (intraday scenarios) */
@@ -598,9 +662,9 @@ body {
   cursor: default;
 }
 
-.setup-badge.grade-A { color: #3fb68b; background: rgba(63,182,139,0.14); border-color: rgba(63,182,139,0.5); }
-.setup-badge.grade-B { color: #e0a33e; background: rgba(224,163,62,0.14); border-color: rgba(224,163,62,0.5); }
-.setup-badge.grade-C { color: #d9534f; background: rgba(217,83,79,0.14); border-color: rgba(217,83,79,0.5); }
+.setup-badge.grade-A { color: var(--green); background: color-mix(in oklab, var(--green) 14%, transparent); border-color: color-mix(in oklab, var(--green) 50%, transparent); }
+.setup-badge.grade-B { color: var(--amber); background: color-mix(in oklab, var(--amber) 14%, transparent); border-color: color-mix(in oklab, var(--amber) 50%, transparent); }
+.setup-badge.grade-C { color: var(--red); background: color-mix(in oklab, var(--red) 14%, transparent); border-color: color-mix(in oklab, var(--red) 50%, transparent); }
 
 .setup-summary {
   display: flex;
@@ -633,7 +697,7 @@ body {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: var(--bg, #0b0e11);
+  color: var(--bg, var(--bg));
   background: var(--accent, var(--green));
 }
 
@@ -670,7 +734,7 @@ body {
   box-shadow: 0 0 8px var(--accent, var(--green));
 }
 
-.bench-dot { background: #6ea8fe; box-shadow: 0 0 8px #6ea8fe; }
+.bench-dot { background: var(--benchmark); box-shadow: 0 0 8px var(--benchmark); }
 
 /* Asset personality tag on scenario cards (Phase 6) */
 .scenario-personality {
@@ -681,9 +745,9 @@ body {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #6ea8fe;
-  background: rgba(110,168,254,0.12);
-  border: 1px solid rgba(110,168,254,0.4);
+  color: var(--benchmark);
+  background: color-mix(in oklab, var(--benchmark) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--benchmark) 40%, transparent);
 }
 
 .progress {
@@ -788,7 +852,7 @@ body {
 .margin-call-banner {
   margin: 10px 0;
   padding: 12px 16px;
-  background: rgba(217, 83, 79, 0.12);
+  background: color-mix(in oklab, var(--red) 12%, transparent);
   border: 1px solid var(--red);
   border-radius: 3px;
   color: var(--red);
@@ -808,8 +872,8 @@ body {
   flex-wrap: wrap;
   margin: 0 0 14px;
   padding: 12px 16px;
-  background: rgba(255, 194, 88, 0.08);
-  border: 1px solid rgba(255, 194, 88, 0.35);
+  background: color-mix(in oklab, var(--amber) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--amber) 35%, transparent);
   border-radius: 3px;
 }
 .fm-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
@@ -830,10 +894,10 @@ body {
   box-shadow: none;
 }
 .scenario-card.locked .scenario-tier { color: var(--muted); }
-.scenario-card.fm { border-color: rgba(255, 194, 88, 0.4); }
+.scenario-card.fm { border-color: color-mix(in oklab, var(--amber) 40%, transparent); }
 .scenario-card.fm:hover {
   border-color: var(--amber);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 22px rgba(255,194,88,0.12);
+  box-shadow: 0 8px 28px oklch(0% 0 0 / 0.5), 0 0 22px color-mix(in oklab, var(--amber) 12%, transparent);
 }
 .scenario-fm-tag {
   font-family: var(--display);
@@ -856,24 +920,24 @@ body {
 .scenario-regime {
   color: var(--cyan);
   background: var(--cyan-soft);
-  border: 1px solid rgba(69, 216, 255, 0.35);
+  border: 1px solid color-mix(in oklab, var(--cyan) 35%, transparent);
 }
 .badge-news {
   color: var(--amber);
-  background: rgba(255, 194, 88, 0.12);
-  border: 1px solid rgba(255, 194, 88, 0.4);
+  background: color-mix(in oklab, var(--amber) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--amber) 40%, transparent);
 }
 .badge-scam {
   color: var(--red);
-  background: rgba(255, 95, 92, 0.12);
-  border: 1px solid rgba(255, 95, 92, 0.4);
+  background: color-mix(in oklab, var(--red) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 40%, transparent);
 }
 
 .fm-banner {
   margin: 10px 0;
   padding: 10px 16px;
-  background: rgba(255, 194, 88, 0.1);
-  border: 1px solid rgba(255, 194, 88, 0.4);
+  background: color-mix(in oklab, var(--amber) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--amber) 40%, transparent);
   border-radius: 3px;
   color: var(--amber);
   font-family: var(--mono);
@@ -884,7 +948,7 @@ body {
 .concentration-banner {
   margin: 10px 0;
   padding: 12px 16px;
-  background: rgba(255, 194, 88, 0.12);
+  background: color-mix(in oklab, var(--amber) 12%, transparent);
   border: 1px solid var(--amber);
   border-radius: 3px;
   color: var(--amber);
@@ -910,7 +974,7 @@ body {
   font-weight: 700;
   font-size: 10px;
   letter-spacing: 1.5px;
-  color: #05121a;
+  color: var(--bg);
   background: var(--cyan);
   padding: 2px 7px;
   border-radius: 2px;
@@ -942,9 +1006,9 @@ body {
   background: var(--panel);
   text-align: left;
 }
-.scam-debrief.scam-bad { border-color: var(--red); background: rgba(255, 95, 92, 0.08); }
-.scam-debrief.scam-good { border-color: var(--green); background: rgba(46, 242, 160, 0.07); }
-.scam-debrief.scam-ok { border-color: var(--amber); background: rgba(255, 194, 88, 0.07); }
+.scam-debrief.scam-bad { border-color: var(--red); background: color-mix(in oklab, var(--red) 8%, transparent); }
+.scam-debrief.scam-good { border-color: var(--green); background: color-mix(in oklab, var(--green) 7%, transparent); }
+.scam-debrief.scam-ok { border-color: var(--amber); background: color-mix(in oklab, var(--amber) 7%, transparent); }
 .scam-title {
   font-family: var(--display);
   font-weight: 700;
@@ -1039,7 +1103,7 @@ body {
 .board-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .board-rank { color: var(--muted); width: 36px; }
 .board-score { text-align: right; color: var(--cyan); font-weight: 700; }
-.board-me { background: rgba(69, 216, 255, 0.08); }
+.board-me { background: color-mix(in oklab, var(--cyan) 8%, transparent); }
 .board-me td { color: var(--text); }
 .league-actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
 .league-action { display: flex; gap: 8px; flex: 1; min-width: 240px; }
@@ -1115,14 +1179,14 @@ body {
   margin: 8px 0;
   padding-left: 18px;
   line-height: 1.6;
-  color: var(--amber, var(--warn, #e0a10a));
+  color: var(--amber, var(--warn, var(--amber)));
   font-size: 13px;
 }
 
 /* Missions */
 .daily-card {
   padding: 16px 18px;
-  background: linear-gradient(180deg, rgba(0,255,163,0.06), var(--panel));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--green) 6%, transparent), var(--panel));
   border: 1px solid var(--green);
   border-radius: 4px;
   max-width: 620px;
@@ -1176,8 +1240,8 @@ body {
   border-radius: 999px;
   border: 1px solid var(--line-2, var(--line));
 }
-.rule-ok { color: var(--green); border-color: rgba(0,255,163,0.4); }
-.rule-bad { color: var(--red); border-color: rgba(217,83,79,0.5); }
+.rule-ok { color: var(--green); border-color: color-mix(in oklab, var(--green) 40%, transparent); }
+.rule-bad { color: var(--red); border-color: color-mix(in oklab, var(--red) 50%, transparent); }
 .rule-pending { color: var(--muted); }
 
 .mission-result {
@@ -1186,8 +1250,8 @@ body {
   border-radius: 4px;
   max-width: 620px;
 }
-.mission-result.passed { border: 1px solid var(--green); background: rgba(0,255,163,0.06); }
-.mission-result.failed { border: 1px solid var(--red); background: rgba(217,83,79,0.06); }
+.mission-result.passed { border: 1px solid var(--green); background: color-mix(in oklab, var(--green) 6%, transparent); }
+.mission-result.failed { border: 1px solid var(--red); background: color-mix(in oklab, var(--red) 6%, transparent); }
 .mission-result-head {
   font-family: var(--mono);
   font-weight: 800;
@@ -1270,7 +1334,7 @@ body {
   border-radius: 999px;
   border: 1px solid var(--line-2, var(--line));
 }
-.market-chip.on { color: var(--green); border-color: rgba(0,255,163,0.4); }
+.market-chip.on { color: var(--green); border-color: color-mix(in oklab, var(--green) 40%, transparent); }
 .market-chip.off { color: var(--muted); }
 
 .career-ladder { list-style: none; padding: 0; margin: 8px 0 0; counter-reset: lvl; max-width: 620px; }
@@ -1284,7 +1348,7 @@ body {
   font-size: 14px;
 }
 .career-ladder li.done { border-left-color: var(--muted); opacity: 0.7; }
-.career-ladder li.current { border-left-color: var(--green); background: rgba(0,255,163,0.05); font-weight: 700; }
+.career-ladder li.current { border-left-color: var(--green); background: color-mix(in oklab, var(--green) 5%, transparent); font-weight: 700; }
 .ladder-unlocks { font-family: var(--mono); font-size: 11px; }
 
 .long-btn, .short-btn, .close-btn {
@@ -1297,26 +1361,26 @@ body {
 
 .long-btn {
   background: var(--green);
-  color: #04120c;
-  box-shadow: 0 0 0 1px rgba(61,220,151,0.4), 0 3px 16px var(--green-glow);
+  color: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 40%, transparent), 0 3px 16px var(--green-glow);
 }
 
-.long-btn:hover { box-shadow: 0 0 0 1px rgba(61,220,151,0.8), 0 5px 22px var(--green-glow); }
+.long-btn:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 80%, transparent), 0 5px 22px var(--green-glow); }
 .long-btn:active { transform: translateY(2px); }
 
 .short-btn {
   background: var(--red);
-  color: #180605;
-  box-shadow: 0 0 0 1px rgba(239,83,80,0.4), 0 3px 16px rgba(239,83,80,0.25);
+  color: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--red) 40%, transparent), 0 3px 16px color-mix(in oklab, var(--red) 25%, transparent);
 }
 
-.short-btn:hover { box-shadow: 0 0 0 1px rgba(239,83,80,0.8), 0 5px 22px rgba(239,83,80,0.3); }
+.short-btn:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--red) 80%, transparent), 0 5px 22px color-mix(in oklab, var(--red) 30%, transparent); }
 .short-btn:active { transform: translateY(2px); }
 
 .close-btn {
   background: var(--amber);
-  color: #1b1204;
-  box-shadow: 0 0 0 1px rgba(240,180,83,0.4), 0 3px 16px rgba(240,180,83,0.2);
+  color: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--amber) 40%, transparent), 0 3px 16px color-mix(in oklab, var(--amber) 20%, transparent);
 }
 
 .close-btn:active { transform: translateY(2px); }
@@ -1384,7 +1448,7 @@ body {
   border-color: var(--amber);
   grid-column: span 2;
   background: linear-gradient(180deg, var(--amber-soft), var(--panel));
-  box-shadow: 0 0 26px rgba(240,180,83,0.08);
+  box-shadow: 0 0 26px color-mix(in oklab, var(--amber) 8%, transparent);
 }
 
 .stat-label {
@@ -1402,7 +1466,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.stat-highlight .stat-value { color: var(--amber); text-shadow: 0 0 16px rgba(240,180,83,0.3); }
+.stat-highlight .stat-value { color: var(--amber); text-shadow: 0 0 16px color-mix(in oklab, var(--amber) 30%, transparent); }
 
 .leaderboard { margin-bottom: 28px; }
 
@@ -1460,7 +1524,7 @@ body {
 .continue-btn {
   width: 100%;
   background: var(--green);
-  color: #04120c;
+  color: var(--bg);
   border: none;
   padding: 17px 20px;
   font-weight: 800;
@@ -1468,10 +1532,10 @@ body {
   letter-spacing: 0.5px;
   text-align: left;
   margin-bottom: 30px;
-  box-shadow: 0 0 0 1px rgba(61,220,151,0.5), 0 6px 26px var(--green-glow);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 50%, transparent), 0 6px 26px var(--green-glow);
 }
 
-.continue-btn:hover { box-shadow: 0 0 0 1px rgba(61,220,151,0.9), 0 8px 34px var(--green-glow); }
+.continue-btn:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 90%, transparent), 0 8px 34px var(--green-glow); }
 .continue-btn:active { transform: translateY(2px); }
 
 .learn-done-banner {
@@ -1556,12 +1620,12 @@ body {
 .learn-item.current {
   border-color: var(--green);
   background: var(--green-soft);
-  box-shadow: 0 0 18px rgba(61,220,151,0.08);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--green) 8%, transparent);
 }
 
 .learn-item.current .learn-item-icon {
   background: var(--green);
-  color: #04120c;
+  color: var(--bg);
   border-color: var(--green);
   box-shadow: 0 0 12px var(--green-glow);
 }
@@ -1622,13 +1686,13 @@ body {
 
 .lesson-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--green), #6ee7b7);
+  background: linear-gradient(90deg, var(--green), var(--green-lift));
   transition: width 0.25s ease;
   box-shadow: 0 0 10px var(--green-glow);
 }
 
 .lesson-body {
-  color: #b9c3ce;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.85;
   white-space: pre-line;
@@ -1672,7 +1736,7 @@ body {
   border-color: var(--green);
   background: var(--green-soft);
   color: var(--green);
-  box-shadow: 0 0 16px rgba(61,220,151,0.1);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--green) 10%, transparent);
 }
 
 .lesson-option.incorrect {
@@ -1715,7 +1779,7 @@ body {
   border-radius: 3px;
   padding: 16px;
   margin-bottom: 24px;
-  box-shadow: 0 0 24px rgba(240,180,83,0.06);
+  box-shadow: 0 0 24px color-mix(in oklab, var(--amber) 6%, transparent);
 }
 
 .practice-label {
@@ -1750,12 +1814,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: linear-gradient(120deg, var(--panel-raised), var(--panel) 60%, rgba(167,139,250,0.06));
+  background: linear-gradient(120deg, var(--panel-raised), var(--panel) 60%, color-mix(in oklab, var(--violet) 6%, transparent));
   border: 1px solid var(--line-bright);
   border-radius: 4px;
   padding: 16px 18px;
   margin-bottom: 22px;
-  box-shadow: 0 0 30px rgba(69,216,255,0.05);
+  box-shadow: 0 0 30px color-mix(in oklab, var(--cyan) 5%, transparent);
 }
 
 .rank-left {
@@ -1769,11 +1833,11 @@ body {
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 1px;
-  color: #120b02;
-  background: linear-gradient(120deg, var(--amber), #ffdf9e);
+  color: var(--bg);
+  background: linear-gradient(120deg, var(--amber), var(--amber-lift));
   border-radius: 4px;
   padding: 8px 12px;
-  box-shadow: 0 0 18px rgba(255,194,88,0.35);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--amber) 35%, transparent);
 }
 
 .rank-name {
@@ -1800,9 +1864,9 @@ body {
 
 .xp-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--amber), #ff9d5c);
+  background: linear-gradient(90deg, var(--amber), var(--orange));
   border-radius: 4px;
-  box-shadow: 0 0 14px rgba(255,194,88,0.4);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--amber) 40%, transparent);
   transition: width 0.4s ease;
 }
 
@@ -1828,11 +1892,11 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1px;
-  color: #1b0e02;
-  background: linear-gradient(120deg, #ff9d5c, var(--amber));
+  color: var(--bg);
+  background: linear-gradient(120deg, var(--orange), var(--amber));
   border-radius: 3px;
   padding: 6px 10px;
-  box-shadow: 0 0 16px rgba(255,157,92,0.45);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--orange) 45%, transparent);
   animation: streak-pop 0.3s ease;
 }
 
@@ -1850,7 +1914,7 @@ body {
   font-weight: 700;
   font-size: 20px;
   color: var(--amber);
-  text-shadow: 0 0 20px rgba(255,194,88,0.6);
+  text-shadow: 0 0 20px color-mix(in oklab, var(--amber) 60%, transparent);
   animation: xp-float 0.9s ease forwards;
   pointer-events: none;
   z-index: 50;
@@ -1870,7 +1934,7 @@ body {
 .summary-emoji {
   font-size: 56px;
   margin-bottom: 12px;
-  filter: drop-shadow(0 0 24px rgba(255,194,88,0.3));
+  filter: drop-shadow(0 0 24px color-mix(in oklab, var(--amber) 30%, transparent));
 }
 
 .summary-screen .lesson-body {
@@ -1884,11 +1948,11 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
   margin: 10px 0 18px;
-  background: linear-gradient(100deg, var(--amber), #ff9d5c);
+  background: linear-gradient(100deg, var(--amber), var(--orange));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 22px rgba(255,194,88,0.35));
+  filter: drop-shadow(0 0 22px color-mix(in oklab, var(--amber) 35%, transparent));
 }
 
 .levelup-banner {
@@ -1901,7 +1965,7 @@ body {
   font-size: 13.5px;
   letter-spacing: 0.5px;
   margin-bottom: 22px;
-  box-shadow: 0 0 26px rgba(167,139,250,0.15);
+  box-shadow: 0 0 26px color-mix(in oklab, var(--violet) 15%, transparent);
   animation: streak-pop 0.35s ease;
 }
 
@@ -1914,7 +1978,7 @@ body {
 
 .learn-unit.unit-complete {
   border-color: var(--green);
-  box-shadow: 0 0 22px rgba(46,242,160,0.07);
+  box-shadow: 0 0 22px color-mix(in oklab, var(--green) 7%, transparent);
 }
 
 .learn-unit.unit-complete .learn-unit-title { color: var(--green); }
@@ -1928,7 +1992,7 @@ body {
   padding: 14px 10px 6px;
   margin: 0 0 24px;
   max-width: 580px;
-  box-shadow: 0 0 26px rgba(69,216,255,0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: 0 0 26px color-mix(in oklab, var(--cyan) 4%, transparent), inset 0 1px 0 oklch(100% 0 0 / 0.03);
 }
 
 .diagram-svg {
@@ -1968,7 +2032,7 @@ body {
   text-align: left;
   text-transform: none;
   letter-spacing: 0;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(69,216,255,0.12);
+  box-shadow: 0 10px 30px oklch(0% 0 0 / 0.6), 0 0 20px color-mix(in oklab, var(--cyan) 12%, transparent);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s ease, transform 0.12s ease;
@@ -2024,7 +2088,7 @@ body {
   transform: translateY(-50%);
   border-top: 1px dashed var(--line-bright);
 }
-.to-entry  { border-top-color: rgba(154, 165, 177, 0.7); }
+.to-entry  { border-top-color: oklch(72% 0.02 var(--hue-neutral) / 0.7); }
 .to-sl     { border-top-color: var(--red); }
 .to-tp     { border-top-color: var(--green); }
 .to-ghost  { border-top-style: dotted; opacity: 0.6; }
@@ -2043,9 +2107,9 @@ body {
   background: var(--bg);
   border: 1px solid var(--line);
 }
-.to-badge-entry { color: var(--text); border-color: rgba(154, 165, 177, 0.5); }
-.to-badge-sl    { color: var(--red);   border-color: rgba(255, 95, 92, 0.5); }
-.to-badge-tp    { color: var(--green); border-color: rgba(46, 242, 160, 0.5); }
+.to-badge-entry { color: var(--text); border-color: oklch(72% 0.02 var(--hue-neutral) / 0.5); }
+.to-badge-sl    { color: var(--red);   border-color: color-mix(in oklab, var(--red) 50%, transparent); }
+.to-badge-tp    { color: var(--green); border-color: color-mix(in oklab, var(--green) 50%, transparent); }
 
 .to-tag {
   position: absolute;
@@ -2112,7 +2176,7 @@ body {
   user-select: none;
   transition: filter 0.1s;
 }
-.to-axis-entry { background: #2b3646; color: var(--text); }
+.to-axis-entry { background: var(--line-bright); color: var(--text); }
 .to-axis-sl    { background: var(--red);   color: var(--bg); }
 .to-axis-tp    { background: var(--green); color: var(--bg); }
 .to-grip { pointer-events: auto; cursor: ns-resize; touch-action: none; }
@@ -2129,7 +2193,7 @@ body {
   gap: 12px;
   padding: 4px 10px;
   border-radius: 3px;
-  background: rgba(11, 14, 17, 0.72);
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
   border: 1px solid var(--line);
   backdrop-filter: blur(3px);
   font-family: var(--mono);
@@ -2324,7 +2388,7 @@ body {
   margin-right: 8px;
   padding: 2px 8px;
   border-radius: 3px;
-  background: rgba(255, 194, 88, 0.22);
+  background: color-mix(in oklab, var(--amber) 22%, transparent);
   color: var(--amber);
   font-size: 10.5px;
   font-weight: 800;
@@ -2416,17 +2480,17 @@ body {
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
-  background: rgba(12, 17, 22, 0.96);
+  background: color-mix(in oklab, var(--panel) 96%, transparent);
   border: 1px solid var(--line-bright);
-  border-radius: 4px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px oklch(0% 0 0 / 0.55);
 }
 .ds-swatches { display: inline-flex; gap: 3px; }
 .ds-swatch {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid oklch(100% 0 0 / 0.18);
   cursor: pointer;
   padding: 0;
   transition: transform 0.1s;
@@ -2548,7 +2612,7 @@ body {
 }
 .paper-analysis {
   background: var(--cyan-soft);
-  border: 1px solid rgba(69, 216, 255, 0.4);
+  border: 1px solid color-mix(in oklab, var(--cyan) 40%, transparent);
   color: var(--text);
 }
 .paper-live {
@@ -2564,11 +2628,11 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  background: rgba(69, 216, 255, 0.18);
+  background: color-mix(in oklab, var(--cyan) 18%, transparent);
   color: var(--cyan);
 }
 .paper-tag.live {
-  background: rgba(46, 242, 160, 0.18);
+  background: color-mix(in oklab, var(--green) 18%, transparent);
   color: var(--green);
   animation: paper-pulse 1.6s ease-in-out infinite;
 }

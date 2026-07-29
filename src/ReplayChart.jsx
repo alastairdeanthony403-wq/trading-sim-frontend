@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight-charts";
+import { C, chartLayout, candleColors } from "./chartTheme";
 
 // Post-session replay: full scenario candles with the player's entries/exits
 // as markers and their SL/TP as price lines. Phase 3 also overlays the market
@@ -11,23 +12,15 @@ export default function ReplayChart({ bars, markers, trades, structure }) {
   useEffect(() => {
     if (!containerRef.current || !bars || bars.length === 0) return;
 
+    const base = chartLayout();
     const chart = createChart(containerRef.current, {
-      layout: {
-        background: { color: "#0b0e11" },
-        textColor: "#9aa5b1",
-        fontFamily: "'JetBrains Mono', monospace",
-      },
-      grid: { vertLines: { color: "#161a1f" }, horzLines: { color: "#161a1f" } },
-      timeScale: { borderColor: "#232830", timeVisible: false },
-      rightPriceScale: { borderColor: "#232830" },
+      ...base,
+      timeScale: { ...base.timeScale, timeVisible: false },
       width: containerRef.current.clientWidth,
       height: 420,
     });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#3fb68b", downColor: "#d9534f", borderVisible: false,
-      wickUpColor: "#3fb68b", wickDownColor: "#d9534f",
-    });
+    const series = chart.addSeries(CandlestickSeries, candleColors);
     series.setData(bars.map((b) => ({
       time: b.bar_sequence, open: b.open, high: b.high, low: b.low, close: b.close,
     })));
@@ -36,8 +29,8 @@ export default function ReplayChart({ bars, markers, trades, structure }) {
       time: m.bar,
       position: m.kind === "entry" ? "belowBar" : "aboveBar",
       color: m.kind === "entry"
-        ? (m.direction === "long" ? "#3fb68b" : "#d9534f")
-        : "#c9d1d9",
+        ? (m.direction === "long" ? C.green : C.red)
+        : C.text,
       shape: m.kind === "entry"
         ? (m.direction === "long" ? "arrowUp" : "arrowDown")
         : "circle",
@@ -55,7 +48,7 @@ export default function ReplayChart({ bars, markers, trades, structure }) {
       .map((s) => ({
         time: s.bar_sequence,
         position: s.side === "high" ? "aboveBar" : "belowBar",
-        color: "#e0a33e",
+        color: C.amber,
         shape: s.side === "high" ? "arrowDown" : "arrowUp",
         text: "sweep",
       }));
@@ -66,8 +59,8 @@ export default function ReplayChart({ bars, markers, trades, structure }) {
     // Phase 3: the strongest support/resistance levels the market revisited
     // (top few by touch count — sorted strongest-first by the server).
     ((structure && structure.levels) || []).slice(0, 5).forEach((lv) => {
-      const color = lv.kind === "support" ? "#3fb68b"
-        : lv.kind === "resistance" ? "#d9534f" : "#7f8fa6";
+      const color = lv.kind === "support" ? C.green
+        : lv.kind === "resistance" ? C.red : C.faint;
       series.createPriceLine({
         price: lv.price, color, lineWidth: 1, lineStyle: 3,
         axisLabelVisible: false,
@@ -77,9 +70,9 @@ export default function ReplayChart({ bars, markers, trades, structure }) {
 
     (trades || []).forEach((t) => {
       if (t.stop_loss != null)
-        series.createPriceLine({ price: t.stop_loss, color: "#d9534f", lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "SL" });
+        series.createPriceLine({ price: t.stop_loss, color: C.red, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "SL" });
       if (t.take_profit != null)
-        series.createPriceLine({ price: t.take_profit, color: "#3fb68b", lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "TP" });
+        series.createPriceLine({ price: t.take_profit, color: C.green, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "TP" });
     });
 
     chart.timeScale().fitContent();

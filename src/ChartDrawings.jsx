@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { C, alpha } from "./chartTheme";
 
 // Drawing layer (chart pass 4 + editing pass): trendline, horizontal ray and
 // translucent rectangle, each selectable, movable, resizable, recolourable and
@@ -14,15 +15,10 @@ import { useEffect, useRef, useState } from "react";
 // handler sees it) while letting every other click fall through to the chart,
 // so panning and zooming keep working normally.
 
-export const DRAW_COLORS = ["#45d8ff", "#2ef2a0", "#ff5f5c", "#ffc258", "#a78bfa", "#e2e9f0"];
+export const DRAW_COLORS = [C.cyan, C.green, C.red, C.amber, C.violet, C.text];
 
 const HIT = 7;         // px tolerance for hitting a line
 const GRAB = 9;        // px tolerance for grabbing a resize handle
-
-const rgba = (hex, a) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-};
 
 const distToSeg = (px, py, a, b) => {
   const dx = b.x - a.x, dy = b.y - a.y;
@@ -126,14 +122,14 @@ export default function ChartDrawings({
   useEffect(() => {
     let raf = 0;
     const drawHandle = (ctx, x, y, color) => {
-      ctx.fillStyle = "#0b0e11"; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.fillStyle = C.bg; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.rect(x - 3.5, y - 3.5, 7, 7); ctx.fill(); ctx.stroke();
     };
     const label = (ctx, text, x, y, color) => {
       if (!text) return;
       ctx.font = "600 11px 'JetBrains Mono', monospace";
       const w = ctx.measureText(text).width;
-      ctx.fillStyle = "rgba(11,14,17,0.75)";
+      ctx.fillStyle = alpha(C.bg, 0.75);
       ctx.fillRect(x - 3, y - 12, w + 6, 15);
       ctx.fillStyle = color;
       ctx.fillText(text, x, y);
@@ -143,7 +139,7 @@ export default function ChartDrawings({
       const a = project(d.p1);
       if (!a) return;
       ctx.lineWidth = isSel ? 2 : 1.5;
-      ctx.strokeStyle = d.preview ? rgba(color, 0.6) : color;
+      ctx.strokeStyle = d.preview ? alpha(color, 0.6) : color;
       if (d.type === "ray") {
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(w, a.y); ctx.stroke();
         label(ctx, d.text, a.x + 6, a.y - 6, color);
@@ -156,7 +152,7 @@ export default function ChartDrawings({
         } else {
           const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
           const rw = Math.abs(b.x - a.x), rh = Math.abs(b.y - a.y);
-          ctx.fillStyle = rgba(color, 0.13);          // translucent fill
+          ctx.fillStyle = alpha(color, 0.13);          // translucent fill
           ctx.fillRect(x, y, rw, rh);
           ctx.strokeRect(x, y, rw, rh);
           label(ctx, d.text, x + 6, y - 6, color);

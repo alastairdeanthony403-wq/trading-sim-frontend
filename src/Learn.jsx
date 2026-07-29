@@ -18,19 +18,39 @@ function itemTitle(item) {
   return CHECKS[item.id]?.title || item.id;
 }
 
+// Concept tags from the backend academy registry → learner-facing names.
+const CONCEPT_LABELS = {
+  support_resistance: "support & resistance",
+  trend_following: "trend following",
+  liquidity_sweeps: "liquidity & sweeps",
+  risk_stops: "risk & stops",
+  volatility_news: "volatility",
+  discipline: "discipline",
+};
+const conceptLabel = (c) => CONCEPT_LABELS[c] || (c || "").replace(/_/g, " ");
+
 export default function Learn({ progressData, onExit, onProgressUpdate,
-                                onScenarioCheck, scenarioOutcome, onScenarioConsumed }) {
+                                onScenarioCheck, scenarioOutcome, onScenarioConsumed,
+                                spotDue, onSpotCheck }) {
   const [view, setView] = useState("path");
   const [activeItem, setActiveItem] = useState(null);
   const [, forceRefresh] = useState(0);
 
-  // Returning from a scenario-check run: re-open that check at its result screen.
+  // A spot-check result belongs to the path view, not to a unit check.
+  const spotOutcome = scenarioOutcome && scenarioOutcome.spot ? scenarioOutcome : null;
+
+  // Returning from a unit scenario-check run: re-open that check at its result.
   useEffect(() => {
-    if (!scenarioOutcome) return;
+    if (!scenarioOutcome || scenarioOutcome.spot) return;
     const item = (progressData?.ordered_path || [])
       .find((i) => i.type === "check" && i.id === scenarioOutcome.check_id);
     if (item) { setActiveItem(item); setView("player"); }
   }, [scenarioOutcome]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A spot check always lands back on the path so its result is visible there.
+  useEffect(() => {
+    if (spotOutcome) { setView("path"); setActiveItem(null); }
+  }, [spotOutcome]);
 
   if (!progressData) {
     return (
@@ -103,7 +123,7 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
     <div className="app">
       <header className="header">
         <div className="logo">TAPE//RUN</div>
-        <button className="link-btn" onClick={onExit}>← Menu</button>
+        <button className="link-btn" onClick={onExit}>← Career</button>
       </header>
       <main className="learn">
         <div className="rank-card">
@@ -123,6 +143,41 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
           <h2>Learn to trade</h2>
           <div className="learn-progress-summary">{doneCount} / {totalItems} COMPLETE</div>
         </div>
+
+        {spotOutcome && (
+          <div className={`spot-result ${spotOutcome.passed ? "pass" : "fail"}`}>
+            <div className="spot-result-head">
+              {spotOutcome.passed ? "✓ SPOT CHECK PASSED" : "✕ SPOT CHECK FAILED"}
+            </div>
+            <div className="spot-result-rules">
+              {(spotOutcome.results || []).map((r, i) => (
+                <span key={i} className={`rule-chip ${r.passed ? "rule-ok" : "rule-bad"}`}>
+                  {r.passed ? "✓" : "✕"} {r.label}
+                </span>
+              ))}
+            </div>
+            <div className="spot-result-actions">
+              {!spotOutcome.passed && spotDue && (
+                <button className="primary-btn" onClick={() => { onScenarioConsumed?.(); onSpotCheck?.(); }}>
+                  Try a fresh market
+                </button>
+              )}
+              <button className="link-btn" onClick={() => onScenarioConsumed?.()}>Dismiss</button>
+            </div>
+          </div>
+        )}
+
+        {spotDue && !spotOutcome && (
+          <div className="spot-banner">
+            <div className="spot-banner-text">
+              <span className="spot-tag">⚡ SPOT CHECK</span>
+              Surprise market test on <b>{conceptLabel(spotDue.concept)}</b> — from
+              {" "}Unit {spotDue.unit}: {spotDue.unit_title}. No warning in the real
+              market either.
+            </div>
+            <button className="spot-btn" onClick={onSpotCheck}>Take it now</button>
+          </div>
+        )}
 
         {nextItem && (
           <button className="continue-btn" onClick={() => startItem(nextItem)}>

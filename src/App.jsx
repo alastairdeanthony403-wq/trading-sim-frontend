@@ -10,6 +10,8 @@ import {
   paperClock as apiPaperClock,
   paperEnd,
   startPracticeCheck as apiStartPracticeCheck,
+  startSpotCheck as apiStartSpotCheck,
+  getSpotCheck,
   getPracticeStatus,
   gradePracticeCheck,
   openTrade,
@@ -103,6 +105,57 @@ function aggregateBars(bars, mult) {
   return out;
 }
 
+// The intended route through the game, shown on the guide screen. `done` and
+// `locked` are derived from real career state so the guide doubles as a map of
+// where the player actually is.
+const GUIDE_STEPS = [
+  {
+    key: "learn", title: "Learn to trade", where: "Career",
+    desc: "Work the curriculum in order — six units, from how markets work through "
+        + "structure, risk and discipline.",
+    points: [
+      "Every unit ends with a knowledge check that includes a live market: you have to demonstrate the concept, not just answer questions.",
+      "Spot checks can interrupt at any time — a surprise market on something you've already been taught. No warning, same as the real thing.",
+      "Fail one and you can retry it on a freshly generated market, so nothing can be memorised.",
+    ],
+  },
+  {
+    key: "scenario", title: "Play a scenario", where: "Career",
+    desc: "A blind market plays out bar by bar. Go long or short when you see a setup, "
+        + "manage the trade, then end the session to be scored.",
+    points: [
+      "Use the replay bar to step or speed up the tape; the chart, drawings and volume pane are yours to read.",
+      "Scoring is risk-adjusted, and your discipline is tracked separately.",
+    ],
+  },
+  {
+    key: "missions", title: "Missions & the daily challenge", where: "Career",
+    desc: "Rule-based objectives — a stop on every trade, capped risk, no revenge trading. "
+        + "This is what actually builds the habits the score rewards.",
+    points: ["Passing missions is one of the requirements for climbing the career ladder."],
+  },
+  {
+    key: "paper", title: "Paper trading", where: "Mode 03", careerLevel: 2,
+    desc: "Free practice on a live market: study a warm-up chart, go live, and trade bars "
+        + "arriving in real time for 5–60 minutes.",
+    points: ["Low stakes — it never counts toward your career or a leaderboard."],
+    unlock: "Unlocks at Junior Trader (career level 2)",
+  },
+  {
+    key: "ranked", title: "Ranked", where: "Mode 02", careerLevel: 3,
+    desc: "The same market, the same bars, everyone trading it blind — weekly contests and "
+        + "private leagues.",
+    points: ["Held back until you've shown some discipline, so the board means something."],
+    unlock: "Unlocks at Market Analyst (career level 3)",
+  },
+];
+
+function guideStepState(step, career) {
+  const level = career?.level || 1;
+  if (step.careerLevel) return level >= step.careerLevel ? "open" : "locked";
+  return "open";
+}
+
 // Friendly labels for synthetic-market regime tags (Phase E).
 const REGIME_LABELS = {
   trend_up: "Uptrend", trend_down: "Downtrend", range: "Range",
@@ -183,6 +236,7 @@ export default function App() {
   const [practiceCheck, setPracticeCheck] = useState(null);   // { check_id, goal, rules }
   const [practiceStatus, setPracticeStatus] = useState(null); // live rule HUD { results, passed }
   const [scenarioOutcome, setScenarioOutcome] = useState(null); // {check_id, passed, results, goal}
+  const [spotDue, setSpotDue] = useState(null);   // surprise spot check waiting (server-decided)
   const practiceCheckRef = useRef(null);
   practiceCheckRef.current = practiceCheck;
   // Paper trading (Phase 2): timed practice on the intraday engine. paper holds
@@ -257,6 +311,14 @@ export default function App() {
     // Career drives which markets are unlocked and whether Fund Manager mode
     // (a level-6 skill unlock) is available on the select screen.
     getCareer(getUserId()).then(setCareer).catch(() => {});
+    // First visit: open the guide, so a new player meets the game in order
+    // instead of guessing which button to press.
+    try {
+      if (!localStorage.getItem("tape_run_seen_guide")) {
+        localStorage.setItem("tape_run_seen_guide", "1");
+        setScreen("howto");
+      }
+    } catch { /* private mode — just show the menu */ }
   }, []);
 
   // Fund Manager mode is the level-6 "Fund Manager" career unlock.
@@ -291,11 +353,20 @@ export default function App() {
     setScreen("missions");
   }, []);
 
+  // Whether the server has a surprise spot check waiting for this learner.
+  const refreshSpotCheck = useCallback(async () => {
+    try {
+      const r = await getSpotCheck(getUserId());
+      setSpotDue(r && r.due ? r : null);
+    } catch { setSpotDue(null); }
+  }, []);
+
   const openLearn = useCallback(async () => {
     const p = await getProgress(getUserId());
     setProgressData(p);
+    refreshSpotCheck();
     setScreen("learn");
-  }, []);
+  }, [refreshSpotCheck]);
 
   const openPaper = useCallback(() => {
     setPaperClk(null);
@@ -564,10 +635,14 @@ export default function App() {
   }, [contest, session]);
 
   // ── Academy scenario-check: launch a concept-matched practice run ──────────
-  const startScenarioCheck = useCallback(async (checkId) => {
+  // `spot` (optional) turns this into a surprise spot check on an already-taught
+  // concept: same live market, no warning, tied to the lesson that sprang it.
+  const startScenarioCheck = useCallback(async (checkId, spot = null) => {
     setLoading(true);
     setScenarioOutcome(null);
-    const s = await apiStartPracticeCheck(checkId, getUserId());
+    const s = spot
+      ? await apiStartSpotCheck(getUserId(), spot.concept, spot.lesson_id)
+      : await apiStartPracticeCheck(checkId, getUserId());
     contestBarCountRef.current = s.total_bars || 0;
     const bars = await getBars(s.session_id);   // server caps to the warm-up window
     try {
@@ -576,7 +651,8 @@ export default function App() {
     } catch { setUnlockedTools([]); setToolLevel(1); }
     setSession({ session_id: s.session_id, scenario_id: s.scenario_id, is_contest: false, mode: "practice" });
     setContestMode(true);                       // reuse the reveal-driven playback loop
-    setPracticeCheck({ check_id: checkId, goal: s.goal, rules: s.rules, is_fallback: s.is_fallback });
+    setPracticeCheck({ check_id: checkId, goal: s.goal, rules: s.rules,
+                       is_fallback: s.is_fallback, spot: spot || null });
     setPracticeStatus(null);
     setAllBars(bars);
     setTimeframes([]); setChartTf(null); setPlaybackStep(1);
@@ -601,7 +677,9 @@ export default function App() {
     try { g = await gradePracticeCheck(session.session_id); } catch { g = { passed: false, results: [] }; }
     setContestMode(false);
     setPracticeCheck(null);
-    setScenarioOutcome({ check_id: pc.check_id, passed: !!g.passed, results: g.results || [], goal: pc.goal });
+    setScenarioOutcome({ check_id: pc.check_id, passed: !!g.passed, results: g.results || [],
+                         goal: pc.goal, spot: pc.spot || null });
+    if (pc.spot) refreshSpotCheck();          // a pass retires it server-side
     setScreen("learn");
   }, [session]);
 
@@ -1095,7 +1173,7 @@ export default function App() {
             </button>
           </div>
           <button className="link-btn menu-howto" onClick={() => setScreen("howto")}>
-            How it works
+            📖 New here? Read the guide
           </button>
         </main>
       </div>
@@ -1110,12 +1188,15 @@ export default function App() {
         onScenarioCheck={startScenarioCheck}
         scenarioOutcome={scenarioOutcome}
         onScenarioConsumed={() => setScenarioOutcome(null)}
+        spotDue={spotDue}
+        onSpotCheck={() => spotDue && startScenarioCheck(null, spotDue)}
         onProgressUpdate={(res) => {
           setProgressData((prev) => ({
             ...prev,
             completed_lessons: res.completed_lessons,
             next_item: res.next_item,
           }));
+          refreshSpotCheck();     // finishing a lesson can spring a spot check
         }}
       />
     );
@@ -1127,18 +1208,54 @@ export default function App() {
         <header className="header">
           <div className="logo">TAPE//RUN</div>
         </header>
-        <main className="howto">
-          <h2>How it works</h2>
-          <ol className="howto-list">
-            <li>Pick a scenario. It's real historical price data — no dates or tickers shown.</li>
-            <li>Watch bars play out one at a time. Go long or short whenever you see a setup.</li>
-            <li>Set your position size, then close the trade whenever you want to lock in P&L.</li>
-            <li>End the session to get scored — not on raw profit, but on risk-adjusted performance (Sharpe, drawdown, win rate).</li>
-            <li>Better scores unlock harder scenarios and new lesson content.</li>
-          </ol>
-          <button className="menu-btn" onClick={() => setScreen("menu")}>
-            Back to menu
-          </button>
+        <main className="guide">
+          <div className="section-title">The guide</div>
+          <h2 style={{ margin: "4px 0 6px" }}>How TAPE//RUN works</h2>
+          <p className="muted" style={{ marginBottom: 22 }}>
+            The whole point: you never see the ticker or the date, so you can't
+            remember what happened next — you have to read the tape. Here's the
+            order to play it in.
+          </p>
+
+          {GUIDE_STEPS.map((s, i) => {
+            const state = guideStepState(s, career);
+            return (
+              <div key={s.key} className={`guide-step ${state}`}>
+                <div className="gs-num">{state === "done" ? "✓" : state === "locked" ? "🔒" : i + 1}</div>
+                <div className="gs-body">
+                  <div className="gs-title">
+                    {s.title}
+                    {s.where && <span className="gs-where">{s.where}</span>}
+                  </div>
+                  <div className="gs-desc">{s.desc}</div>
+                  {s.points && (
+                    <ul className="gs-points">
+                      {s.points.map((p, j) => <li key={j}>{p}</li>)}
+                    </ul>
+                  )}
+                  {state === "locked" && s.unlock && (
+                    <div className="gs-unlock">🔒 {s.unlock}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          <h3 className="section-label" style={{ marginTop: 26 }}>Good to know</h3>
+          <ul className="guide-facts">
+            <li><b>Scoring is risk-adjusted.</b> Sharpe, drawdown and win rate — not raw profit. A lucky punt scores badly.</li>
+            <li><b>Discipline is scored separately.</b> Stops on every trade, sized risk, no revenge trading after a loss.</li>
+            <li><b>Plan before you enter.</b> Hit <i>Plan trade</i> to drag a stop and target onto the chart and size the position from the risk you choose.</li>
+            <li><b>Levels are draggable.</b> Once you're in, drag the SL/TP lines on the chart — the badges show what you'd lose or make, plus your R:R.</li>
+            <li><b>Nothing is spoiled.</b> Bars are released by the server one at a time; future price never reaches your browser.</li>
+          </ul>
+
+          <div className="guide-actions">
+            <button className="primary-btn" onClick={openCareer}>Start with Career</button>
+            <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
+              Back to menu
+            </button>
+          </div>
         </main>
       </div>
     );

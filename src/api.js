@@ -257,6 +257,21 @@ export async function startPracticeCheck(checkId, userId) {
   return res.json();
 }
 
+// Surprise spot check: whether one is waiting, and starting it for its lesson.
+export async function getSpotCheck(userId) {
+  const res = await fetch(`${API_BASE}/academy/spotcheck?user_id=${encodeURIComponent(userId)}`);
+  return res.json();
+}
+
+export async function startSpotCheck(userId, conceptTag, spotLesson) {
+  const res = await fetch(`${API_BASE}/academy/practice/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, concept_tag: conceptTag, spot_lesson: spotLesson }),
+  });
+  return res.json();
+}
+
 export async function getPracticeStatus(sessionId) {
   const res = await fetch(`${API_BASE}/academy/practice/${sessionId}/status`);
   return res.json();

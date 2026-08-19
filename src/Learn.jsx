@@ -7,9 +7,9 @@ import Diagram from "./Diagrams";
 import { BuildCandle, MarkChart, Compare } from "./exercises";
 import { Gloss } from "./glossary";
 
-// Step types that are graded (award XP, count toward a perfect lesson).
+// Step types that are graded (counted toward a perfect lesson).
 const GRADABLE = new Set(["question", "build_candle", "mark_chart", "compare"]);
-import { getXp, addXp, levelFor, nextLevelFor, levelProgress, XP_RULES } from "./xp";
+import { loadXp, migrateLegacyXp, EMPTY_XP } from "./xp";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠", 6: "💰" };
 
@@ -34,7 +34,24 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
                                 spotDue, onSpotCheck }) {
   const [view, setView] = useState("path");
   const [activeItem, setActiveItem] = useState(null);
-  const [, forceRefresh] = useState(0);
+  const [xpState, setXpState] = useState(EMPTY_XP);
+
+  const refreshXp = async () => {
+    const next = await loadXp(getUserId());
+    setXpState(next);
+    return next;
+  };
+
+  // XP moved to the server; anything left in this browser is imported once.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      await migrateLegacyXp(getUserId());
+      const next = await loadXp(getUserId());
+      if (alive) setXpState(next);
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // A spot-check result belongs to the path view, not to a unit check.
   const spotOutcome = scenarioOutcome && scenarioOutcome.spot ? scenarioOutcome : null;
@@ -65,22 +82,29 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
   const path = progressData.ordered_path || [];
   const nextItem = progressData.next_item;
 
-  const xp = getXp();
-  const rank = levelFor(xp);
-  const next = nextLevelFor(xp);
-  const prog = levelProgress(xp);
 
   const startItem = (item) => {
     setActiveItem(item);
     setView("player");
   };
 
-  const handleItemComplete = async () => {
+  // Bank the item server-side and report back what it actually paid, so the
+  // summary shows the real award rather than a locally invented number.
+  const bankItem = async () => {
+    const before = xpState.career_level;
     const res = await markComplete(getUserId(), activeItem.id);
     onProgressUpdate(res);
+    const next = await refreshXp();
+    return {
+      xp: res.xp_awarded || 0,
+      leveledUp: next.career_level > before,
+      levelName: next.career_level_name,
+    };
+  };
+
+  const closePlayer = () => {
     setView("path");
     setActiveItem(null);
-    forceRefresh((n) => n + 1); // re-read XP after a session
   };
 
   if (view === "player" && activeItem) {
@@ -88,8 +112,9 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
       return (
         <LessonPlayer
           lesson={LESSONS[activeItem.id]}
-          onComplete={handleItemComplete}
-          onQuit={() => { setView("path"); setActiveItem(null); }}
+          onBank={bankItem}
+          onComplete={closePlayer}
+          onQuit={closePlayer}
         />
       );
     }
@@ -97,8 +122,9 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
       <KnowledgeCheck
         check={CHECKS[activeItem.id]}
         checkId={activeItem.id}
-        onComplete={handleItemComplete}
-        onQuit={() => { onScenarioConsumed?.(); setView("path"); setActiveItem(null); }}
+        onBank={bankItem}
+        onComplete={closePlayer}
+        onQuit={() => { onScenarioConsumed?.(); closePlayer(); }}
         onScenarioCheck={onScenarioCheck}
         scenarioResult={scenarioOutcome && scenarioOutcome.check_id === activeItem.id ? scenarioOutcome : null}
         onScenarioConsumed={onScenarioConsumed}
@@ -128,14 +154,18 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
       <main className="learn">
         <div className="rank-card">
           <div className="rank-left">
-            <div className="rank-badge">LVL {rank.level}</div>
+            <div className="rank-badge">LVL {xpState.career_level}</div>
             <div>
-              <div className="rank-name">{rank.name}</div>
-              <div className="rank-xp">{xp} XP{next ? ` · ${next.xp - xp} to ${next.name}` : " · MAX RANK"}</div>
+              <div className="rank-name">{xpState.career_level_name}</div>
+              <div className="rank-xp">
+                {xpState.total_xp} XP
+                {xpState.next_level_name ? ` · next: ${xpState.next_level_name}` : " · TOP TIER"}
+              </div>
             </div>
           </div>
           <div className="xp-bar">
-            <div className="xp-fill" style={{ width: `${Math.min(prog * 100, 100)}%` }} />
+            <div className="xp-fill"
+                 style={{ width: `${Math.min((xpState.career_progress || 0) * 100, 100)}%` }} />
           </div>
         </div>
 
@@ -243,29 +273,23 @@ function StreakBadge({ streak }) {
 
 // ---------- Lesson player ----------
 
-function LessonPlayer({ lesson, onComplete, onQuit }) {
+function LessonPlayer({ lesson, onBank, onComplete, onQuit }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [streak, setStreak] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [sessionXp, setSessionXp] = useState(0);
   const [summary, setSummary] = useState(null);
-  const [xpFlash, setXpFlash] = useState(null);
+  const [flash, setFlash] = useState(null);
   const [solved, setSolved] = useState(false);   // interactive exercise submitted
 
   const step = lesson.steps[stepIndex];
   const isLastStep = stepIndex === lesson.steps.length - 1;
   const totalGradable = lesson.steps.filter((s) => GRADABLE.has(s.type)).length;
 
-  const finish = () => {
-    let earned = sessionXp;
-    let perfect = false;
-    if (totalGradable > 0 && correctCount === totalGradable) {
-      earned += XP_RULES.perfectLesson;
-      perfect = true;
-    }
-    const res = addXp(earned);
-    setSummary({ earned, perfect, leveledUp: res.leveledUp, newRank: levelFor(res.after) });
+  const finish = async () => {
+    const perfect = totalGradable > 0 && correctCount === totalGradable;
+    const banked = await onBank();          // the server decides what it paid
+    setSummary({ ...banked, perfect });
   };
 
   const next = () => {
@@ -278,16 +302,15 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
     }
   };
 
-  // Award XP for a graded step (multiple-choice or interactive exercise).
+  // Per-answer feedback. No XP number here: the server never sees individual
+  // answers, so any figure shown mid-lesson would be invented locally. The real
+  // award lands once, on completion.
   const grade = (correct) => {
     if (correct) {
-      const newStreak = streak + 1;
-      setStreak(newStreak);
+      setStreak((n) => n + 1);
       setCorrectCount((c) => c + 1);
-      const gained = XP_RULES.lessonCorrect + (newStreak >= 3 ? XP_RULES.streakBonus : 0);
-      setSessionXp((x) => x + gained);
-      setXpFlash(`+${gained} XP`);
-      setTimeout(() => setXpFlash(null), 900);
+      setFlash("✓ Correct");
+      setTimeout(() => setFlash(null), 900);
     } else {
       setStreak(0);
     }
@@ -314,9 +337,9 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
           <p className="lesson-body">
             {correctCount} / {totalGradable} correct{summary.perfect ? " — flawless run, bonus earned." : "."}
           </p>
-          <div className="xp-award">+{summary.earned} XP</div>
+          <div className="xp-award">+{summary.xp} XP</div>
           {summary.leveledUp && (
-            <div className="levelup-banner">⬆ RANK UP — you are now <strong>{summary.newRank.name}</strong></div>
+            <div className="levelup-banner">⬆ CAREER LEVEL UP — you are now <strong>{summary.levelName}</strong></div>
           )}
           <button className="primary-btn" onClick={onComplete}>Continue</button>
         </main>
@@ -338,7 +361,7 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
         <button className="link-btn" onClick={onQuit}>✕</button>
       </header>
       <main className="lesson-player">
-        {xpFlash && <div className="xp-flash">{xpFlash}</div>}
+        {flash && <div className="xp-flash">{flash}</div>}
         <h2>{lesson.title}</h2>
 
         {step.type === "teach" && (
@@ -418,39 +441,37 @@ function LessonPlayer({ lesson, onComplete, onQuit }) {
 
 // ---------- Knowledge check ----------
 
-function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, scenarioResult, onScenarioConsumed }) {
+function KnowledgeCheck({ check, checkId, onBank, onComplete, onQuit, onScenarioCheck, scenarioResult, onScenarioConsumed }) {
   const [phase, setPhase] = useState(scenarioResult ? "scenario_result" : "questions");
   const [qIndex, setQIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [sessionXp, setSessionXp] = useState(0);
   const [awarded, setAwarded] = useState(null);
-  const [xpFlash, setXpFlash] = useState(null);
+  const [flash, setFlash] = useState(null);
   const [bonusBanked, setBonusBanked] = useState(false);
 
   const q = check.questions[qIndex];
   const isLast = qIndex === check.questions.length - 1;
 
-  // Bank the check-passed bonus once, when the live demonstration is graded a pass.
+  // Bank the unit check once, when the live demonstration is graded a pass.
+  // The server awards it; this only records what came back so the screen can
+  // show the real figure.
   useEffect(() => {
     if (phase === "scenario_result" && scenarioResult?.passed && !bonusBanked) {
-      addXp(XP_RULES.checkPassed);
       setBonusBanked(true);
+      onBank().then(setAwarded);
     }
-  }, [phase, scenarioResult, bonusBanked]);
+  }, [phase, scenarioResult, bonusBanked, onBank]);
 
   const answerQ = (idx) => {
     if (answer != null) return;
     setAnswer(idx);
     if (idx === q.correctIndex) {
-      const newStreak = streak + 1;
-      setStreak(newStreak);
+      setStreak((n) => n + 1);
       setCorrectCount((c) => c + 1);
-      const gained = XP_RULES.checkCorrect + (newStreak >= 3 ? XP_RULES.streakBonus : 0);
-      setSessionXp((x) => x + gained);
-      setXpFlash(`+${gained} XP`);
-      setTimeout(() => setXpFlash(null), 900);
+      setFlash("✓ Correct");
+      setTimeout(() => setFlash(null), 900);
     } else {
       setStreak(0);
     }
@@ -459,11 +480,9 @@ function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, s
   const next = () => {
     if (!isLast) { setQIndex((i) => i + 1); setAnswer(null); return; }
     const questionsPassed = correctCount >= check.passMark;
-    addXp(sessionXp);                       // bank the quiz XP now
     if (questionsPassed) {
       setPhase("scenario_gate");            // now demonstrate it live to clear the unit
     } else {
-      setAwarded({ earned: sessionXp });
       setPhase("questions_failed");
     }
   };
@@ -477,13 +496,12 @@ function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, s
           <div className="summary-emoji">🔁</div>
           <h2>Almost there</h2>
           <p className="lesson-body">
-            {correctCount} / {check.questions.length} correct. You need {check.passMark} to pass —
-            the XP you earned still counts. Run it back.
+            {correctCount} / {check.questions.length} correct. You need {check.passMark} to pass.
+            Run it back whenever you're ready.
           </p>
-          <div className="xp-award">+{awarded?.earned || 0} XP</div>
           <button className="primary-btn" onClick={() => {
             setQIndex(0); setAnswer(null); setCorrectCount(0); setStreak(0);
-            setSessionXp(0); setAwarded(null); setPhase("questions");
+            setAwarded(null); setPhase("questions");
           }}>Retry check</button>
         </main>
       </div>
@@ -538,6 +556,10 @@ function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, s
               ))}
             </div>
           )}
+          {passed && awarded && <div className="xp-award">+{awarded.xp} XP</div>}
+          {passed && awarded?.leveledUp && (
+            <div className="levelup-banner">⬆ CAREER LEVEL UP — you are now <strong>{awarded.levelName}</strong></div>
+          )}
           {passed ? (
             <button className="primary-btn" onClick={() => { onScenarioConsumed?.(); onComplete(); }}>Continue</button>
           ) : (
@@ -565,7 +587,7 @@ function KnowledgeCheck({ check, checkId, onComplete, onQuit, onScenarioCheck, s
         <button className="link-btn" onClick={onQuit}>✕</button>
       </header>
       <main className="lesson-player">
-        {xpFlash && <div className="xp-flash">{xpFlash}</div>}
+        {flash && <div className="xp-flash">{flash}</div>}
         <div className="check-badge">KNOWLEDGE CHECK</div>
         <h2>{check.title}</h2>
         <p className="lesson-question"><Gloss>{q.prompt}</Gloss></p>

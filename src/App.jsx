@@ -42,7 +42,6 @@ import {
   getLeagueLeaderboard,
 } from "./api";
 import { getUserId, getDisplayName, setDisplayName } from "./user";
-import { addXp } from "./xp";
 import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
 import ChartTradeOverlay from "./ChartTradeOverlay";
@@ -283,13 +282,14 @@ export default function App() {
   const activeIsDailyRef = useRef(false);
   activeIsDailyRef.current = activeIsDaily;
 
-  // Submit the active mission (if any) for a finished session; awards XP on pass.
+  // Submit the active mission (if any) for a finished session. XP is awarded and
+  // banked server-side for the process rules the session actually satisfied, so
+  // the response is already the authoritative figure.
   const submitActiveMission = async (sessionId) => {
     const m = activeMissionRef.current;
     if (!m) return;
     try {
       const r = await submitMission(m.id, sessionId, getUserId(), activeIsDailyRef.current);
-      if (r.passed && r.xp_awarded) addXp(r.xp_awarded);
       setMissionResult(r);
     } catch { /* leave missionResult null */ }
   };
@@ -1744,7 +1744,7 @@ export default function App() {
               <div className="mission-rules">{rulesText(daily.mission)}</div>
               <button className="primary-btn" style={{ marginTop: 10 }}
                 onClick={() => handleStartMission(daily.mission, true)} disabled={loading}>
-                Play daily · +{daily.mission.xp_reward} XP
+                Play daily
               </button>
             </div>
           )}
@@ -1752,7 +1752,7 @@ export default function App() {
           <div className="mission-grid">
             {missions.map((m) => (
               <div key={m.id} className="mission-card">
-                <div className="mission-tier">TIER {m.difficulty_tier} · +{m.xp_reward} XP</div>
+                <div className="mission-tier">TIER {m.difficulty_tier}</div>
                 <div className="mission-title">{m.title}</div>
                 <div className="muted mission-brief">{m.brief}</div>
                 <div className="mission-rules">{rulesText(m)}</div>

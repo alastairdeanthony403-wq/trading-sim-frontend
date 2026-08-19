@@ -290,3 +290,35 @@ export async function markComplete(userId, itemId) {
   });
   return res.json();
 }
+
+export async function getXpState(userId) {
+  const r = await fetch(`${API_BASE}/engagement/xp/${encodeURIComponent(userId)}`);
+  if (!r.ok) throw new Error("failed to load xp");
+  return r.json();
+}
+
+export async function importLegacyXp(userId, xp) {
+  const r = await fetch(`${API_BASE}/engagement/xp/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, xp }),
+  });
+  if (!r.ok) throw new Error("failed to import xp");
+  return r.json();
+}
+
+export async function getEngagementProfile(userId) {
+  const r = await fetch(`${API_BASE}/engagement/profile/${encodeURIComponent(userId)}`);
+  if (!r.ok) throw new Error("failed to load profile");
+  return r.json();
+}
+
+export async function updateEngagementProfile(userId, changes) {
+  const r = await fetch(`${API_BASE}/engagement/profile/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
+  });
+  if (!r.ok) throw new Error("failed to update profile");
+  return r.json();
+}

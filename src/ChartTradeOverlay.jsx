@@ -117,7 +117,7 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
         for (const pos of posRef.current) {
           for (const kind of ["entry", "sl", "tp"]) {
             const row = rowsRef.current.get(`${pos.trade_id}:${kind}`);
-            if (!row) continue;
+            if (!row || !row.line) continue;
             const level = levelFor(pos, kind);
             const y = series.priceToCoordinate(level);
             if (y == null) { row.line.style.display = "none"; continue; }
@@ -136,7 +136,7 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
         if (planRef.current) {
           for (const kind of ["entry", "sl", "tp"]) {
             const row = rowsRef.current.get(`plan:${kind}`);
-            if (!row) continue;
+            if (!row || !row.line) continue;
             const level = kind === "entry" ? (priceRef.current ?? 0) : planLevel(kind);
             const y = series.priceToCoordinate(level);
             if (y == null) { row.line.style.display = "none"; continue; }
@@ -209,7 +209,16 @@ export default function ChartTradeOverlay({ seriesRef, positions, currentPrice, 
   };
 
   const bind = (key, part) => (el) => {
-    if (!el) { const r = rowsRef.current.get(key); if (r) delete r[part]; return; }
+    if (!el) {
+      // React hands a detaching ref null. Drop the element, and drop the row
+      // entirely once nothing is left in it — an empty row still reads as
+      // truthy in the rAF loop below, which is how it used to crash.
+      const r = rowsRef.current.get(key);
+      if (!r) return;
+      delete r[part];
+      if (!r.line && !r.badge && !r.axis) rowsRef.current.delete(key);
+      return;
+    }
     const row = rowsRef.current.get(key) || {};
     row[part] = el;
     rowsRef.current.set(key, row);

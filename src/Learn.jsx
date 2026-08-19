@@ -10,6 +10,7 @@ import { Gloss } from "./glossary";
 // Step types that are graded (counted toward a perfect lesson).
 const GRADABLE = new Set(["question", "build_candle", "mark_chart", "compare"]);
 import { loadXp, migrateLegacyXp, EMPTY_XP } from "./xp";
+import { XpToast, useReducedMotion } from "./engagement";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠", 6: "💰" };
 
@@ -35,6 +36,8 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
   const [view, setView] = useState("path");
   const [activeItem, setActiveItem] = useState(null);
   const [xpState, setXpState] = useState(EMPTY_XP);
+  const [xpAward, setXpAward] = useState(null);   // the confirmation beat
+  const reducedMotion = useReducedMotion();
 
   const refreshXp = async () => {
     const next = await loadXp(getUserId());
@@ -94,6 +97,7 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
     const before = xpState.career_level;
     const res = await markComplete(getUserId(), activeItem.id);
     onProgressUpdate(res);
+    if (res.feedback?.xp_awarded > 0) setXpAward(res.feedback);
     const next = await refreshXp();
     return {
       xp: res.xp_awarded || 0,
@@ -152,6 +156,7 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
         <button className="link-btn" onClick={onExit}>← Career</button>
       </header>
       <main className="learn">
+        <XpToast award={xpAward} reducedMotion={reducedMotion} />
         <div className="rank-card">
           <div className="rank-left">
             <div className="rank-badge">LVL {xpState.career_level}</div>

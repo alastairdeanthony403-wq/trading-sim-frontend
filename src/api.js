@@ -322,3 +322,9 @@ export async function updateEngagementProfile(userId, changes) {
   if (!r.ok) throw new Error("failed to update profile");
   return r.json();
 }
+
+export async function getEngagementSummary(userId) {
+  const r = await fetch(`${API_BASE}/engagement/summary/${encodeURIComponent(userId)}`);
+  if (!r.ok) throw new Error("failed to load engagement summary");
+  return r.json();
+}

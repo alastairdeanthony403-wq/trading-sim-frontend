@@ -2659,3 +2659,147 @@ body {
   color: var(--green);
 }
 .paper-end-btn:hover { background: var(--green-soft); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ENGAGEMENT LOOP (Phase 2)
+   Goal → action → confirmation → next goal, plus the end-of-session card.
+   Every animated rule here is switched off under prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── the reward beat ─────────────────────────────────────────────────── */
+.xp-toast {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--panel-raised);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: xp-toast-in 600ms ease-out;
+}
+.xp-toast-amount { color: var(--green); font-weight: 800; letter-spacing: 0.04em; }
+.xp-toast-goal { color: var(--muted); font-size: 12px; }
+
+@keyframes xp-toast-in {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* The learner asked for less motion; honour it here and everywhere else. */
+.xp-toast.no-motion { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-toast { animation: none; }
+  .goal-fill { transition: none; }
+}
+
+/* ── daily goal selector ─────────────────────────────────────────────── */
+.goal-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.goal-head { display: flex; justify-content: space-between; align-items: baseline; }
+.goal-state { font-size: 12px; color: var(--muted); }
+.goal-state.goal-met { color: var(--green); font-weight: 700; }
+
+.goal-bar {
+  height: 6px;
+  background: var(--panel-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0 14px;
+}
+.goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-lift));
+  transition: width 400ms ease-out;
+}
+
+.goal-controls { display: flex; flex-direction: column; gap: 8px; }
+.goal-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.goal-chip {
+  padding: 5px 12px;
+  font-size: 12px;
+  background: var(--panel-raised);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.goal-chip.on {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--green);
+  font-weight: 700;
+}
+.goal-chip:disabled { opacity: 0.5; cursor: default; }
+.goal-note { margin-top: 10px; font-size: 11px; color: var(--faint); }
+
+/* ── next up ─────────────────────────────────────────────────────────── */
+.nextup-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.nextup-card.nextup-done { border-left-color: var(--green); }
+.nextup-title { margin-top: 6px; font-size: 15px; font-weight: 700; color: var(--text); }
+.nextup-btn { margin-top: 12px; }
+
+/* ── end-of-session summary ──────────────────────────────────────────── */
+.session-summary {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin: 20px 0;
+}
+.summary-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 720px) { .summary-cols { grid-template-columns: 1fr; } }
+
+.strength-list { margin: 8px 0 0; padding-left: 18px; color: var(--text); font-size: 13px; }
+.strength-list li { margin-bottom: 6px; }
+.focus-item {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--amber-soft);
+  border-left: 2px solid var(--amber);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.focus-item.focus-clean {
+  background: var(--green-soft);
+  border-left-color: var(--green);
+}
+
+.xp-ledger { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.xp-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.xp-ledger-amount { color: var(--green); font-weight: 700; }
+
+.summary-goal {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.summary-actions {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

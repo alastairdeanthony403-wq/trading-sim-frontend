@@ -25,6 +25,8 @@ import {
   getLeaderboard,
   getProgress,
   getCareer,
+  getEngagementSummary,
+  updateEngagementProfile,
   getTools,
   getMissions,
   getDailyMission,
@@ -42,6 +44,13 @@ import {
   getLeagueLeaderboard,
 } from "./api";
 import { getUserId, getDisplayName, setDisplayName } from "./user";
+import { GoalCard, NextUp, SessionSummary, XpToast, useReducedMotion } from "./engagement";
+import { LESSONS } from "./lessons";
+import { CHECKS } from "./checks";
+
+// The curriculum lives client-side, so the server names the next item by id and
+// this resolves it to something a learner recognises.
+const itemTitle = (id) => LESSONS[id]?.title || CHECKS[id]?.title || null;
 import Learn from "./Learn";
 import ReplayChart from "./ReplayChart";
 import ChartTradeOverlay from "./ChartTradeOverlay";
@@ -258,6 +267,10 @@ export default function App() {
   const [replayData, setReplayData] = useState(null);
   const [llmCoach, setLlmCoach] = useState(null);   // { loading, text }
   const [career, setCareer] = useState(null);
+  const [engagement, setEngagement] = useState(null);   // goal / next-up / consistency
+  const [goalSaving, setGoalSaving] = useState(false);
+  const [xpAward, setXpAward] = useState(null);         // drives the confirmation beat
+  const reducedMotion = useReducedMotion(engagement?.profile?.reduced_motion_override);
   const [lastFill, setLastFill] = useState(null); // {reason, bar, pnl}
   const [results, setResults] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -285,11 +298,18 @@ export default function App() {
   // Submit the active mission (if any) for a finished session. XP is awarded and
   // banked server-side for the process rules the session actually satisfied, so
   // the response is already the authoritative figure.
+  // One short confirmation per award, driven by the server's feedback block.
+  const celebrate = (feedback) => {
+    if (feedback && feedback.xp_awarded > 0) setXpAward(feedback);
+    refreshEngagement();
+  };
+
   const submitActiveMission = async (sessionId) => {
     const m = activeMissionRef.current;
     if (!m) return;
     try {
       const r = await submitMission(m.id, sessionId, getUserId(), activeIsDailyRef.current);
+      celebrate(r.feedback);
       setMissionResult(r);
     } catch { /* leave missionResult null */ }
   };
@@ -342,10 +362,28 @@ export default function App() {
 
   // Career is the hub for scenarios, missions, lessons and progress, so several
   // screens come back to it — always with fresh career state.
+  const refreshEngagement = useCallback(async () => {
+    try {
+      setEngagement(await getEngagementSummary(getUserId()));
+    } catch { /* the loop degrades to hidden, never blocks a screen */ }
+  }, []);
+
+  // Goal changes apply immediately, in either direction, with no confirmation
+  // step — lowering a goal must be exactly as easy as raising one.
+  const changeGoal = async (patch) => {
+    setGoalSaving(true);
+    try {
+      await updateEngagementProfile(getUserId(), patch);
+      await refreshEngagement();
+    } catch { /* leave the previous goal in place */ }
+    setGoalSaving(false);
+  };
+
   const openCareer = useCallback(async () => {
     try { setCareer(await getCareer(getUserId())); } catch { /* keep last known */ }
+    refreshEngagement();
     setScreen("career");
-  }, []);
+  }, [refreshEngagement]);
 
   const openMissions = useCallback(async () => {
     const [ms, d] = await Promise.all([getMissions(), getDailyMission(getUserId())]);
@@ -449,6 +487,10 @@ export default function App() {
       ro.disconnect();
       window.removeEventListener("resize", fit);
       chart.remove();
+      // Everything below reads these refs on later renders; a disposed chart
+      // still answers priceScale() but throws on applyOptions.
+      chartRef.current = null;
+      seriesRef.current = null;
     };
   }, [screen]);
 
@@ -575,6 +617,7 @@ export default function App() {
         setConcentrated(false);
         const r = await endSession(session.session_id);
         setResults(r);
+        celebrate(r.engagement?.feedback);
         try { setScamDebrief(await getScamDebrief(session.session_id)); } catch { setScamDebrief(null); }
         await submitActiveMission(session.session_id);
         const board = await getLeaderboard(session.scenario_id);
@@ -721,6 +764,7 @@ export default function App() {
     try { res = await paperEnd(p.session_id); } catch { res = null; }
     try { localStorage.removeItem("tape_run_paper_session"); } catch { /* ignore */ }
     setResults(res); setLeaderboard([]); setPaper(null); setPaperClk(null);
+    celebrate(res?.engagement?.feedback);
     setScreen("results");
   }, []);
 
@@ -1043,6 +1087,7 @@ export default function App() {
     }
     const res = await endSession(session.session_id);
     setResults(res);
+    celebrate(res.engagement?.feedback);
     try { setScamDebrief(await getScamDebrief(session.session_id)); } catch { setScamDebrief(null); }
     await submitActiveMission(session.session_id);
     const board = await getLeaderboard(session.scenario_id);
@@ -1455,11 +1500,22 @@ export default function App() {
           <button className="link-btn" onClick={() => setScreen("menu")}>← Menu</button>
         </header>
         <main className="howto">
+          <XpToast award={xpAward} reducedMotion={reducedMotion} />
           <div className="section-title">Career</div>
           <h2 style={{ margin: "4px 0 6px" }}>{career.name}</h2>
           <div className="mono muted" style={{ marginBottom: 18 }}>
             Level {career.level} of 7 · advancement is earned by skill and discipline, never profit
           </div>
+
+          {engagement && (
+            <div className="loop-surfaces" style={{ display: "grid", gap: 12, marginBottom: 20 }}>
+              <GoalCard profile={engagement.profile} goal={engagement.goal}
+                        onChange={changeGoal} saving={goalSaving} />
+              <NextUp next={engagement.next_goal}
+                      itemTitle={itemTitle}
+                      onGo={(n) => (n.action === "learn" ? openLearn() : setScreen("select"))} />
+            </div>
+          )}
 
           <div className="career-actions">
             <button className="career-action primary" onClick={() => setScreen("select")}>
@@ -1909,8 +1965,15 @@ export default function App() {
           <div className="logo">TAPE//RUN</div>
         </header>
         <main className="results">
+          <XpToast award={xpAward} reducedMotion={reducedMotion} />
           <h2>Session complete</h2>
           <ScamDebrief debrief={scamDebrief} />
+          <SessionSummary
+            engagement={results.engagement}
+            onDone={() => { openCareer(); }}
+            onReview={openReplay}
+            onAnother={() => setScreen("select")}
+          />
           {missionResult && (
             <div className={`mission-result ${missionResult.passed ? "passed" : "failed"}`}>
               <div className="mission-result-head">
@@ -1976,13 +2039,7 @@ export default function App() {
             </div>
           )}
 
-          <button className="primary-btn" onClick={() => setScreen("select")}>
-            Run another scenario
-          </button>
-          <button className="menu-btn" onClick={openReplay} style={{ marginLeft: 12 }}>
-            Review session
-          </button>
-          <button className="menu-btn" onClick={() => setScreen("menu")} style={{ marginLeft: 12 }}>
+          <button className="link-btn" onClick={() => setScreen("menu")}>
             Back to menu
           </button>
         </main>

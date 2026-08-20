@@ -328,3 +328,9 @@ export async function getEngagementSummary(userId) {
   if (!r.ok) throw new Error("failed to load engagement summary");
   return r.json();
 }
+
+export async function getMilestones(userId) {
+  const r = await fetch(`${API_BASE}/engagement/milestones/${encodeURIComponent(userId)}`);
+  if (!r.ok) throw new Error("failed to load milestones");
+  return r.json();
+}

@@ -2803,3 +2803,63 @@ body {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* ── milestones (Phase 3) ────────────────────────────────────────────────
+   Locked cards are dimmed, never hidden: the name, description and criteria
+   read exactly the same whether unlocked or not. */
+.milestone-gallery { display: flex; flex-direction: column; gap: 24px; }
+.milestone-count { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+.milestone-group { display: flex; flex-direction: column; gap: 10px; }
+.milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.milestone-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  opacity: 0.72;                 /* locked: dimmed, fully legible */
+}
+.milestone-card.unlocked {
+  opacity: 1;
+  border-color: var(--green);
+  background: color-mix(in oklab, var(--green) 7%, var(--panel));
+}
+.milestone-head { display: flex; justify-content: space-between; align-items: baseline; }
+.milestone-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.milestone-tick { color: var(--green); font-weight: 800; }
+.milestone-desc { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.milestone-criteria {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--cyan);
+}
+.milestone-bar {
+  height: 4px;
+  background: var(--panel-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.milestone-fill { height: 100%; background: var(--cyan); }
+.milestone-progress { margin-top: 6px; font-size: 11px; color: var(--faint); }
+
+.milestone-unlocks {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--green-soft);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-lg);
+}
+.milestone-unlock-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+.milestone-unlock-name { font-weight: 700; color: var(--text); font-size: 13px; }
+.milestone-unlock-criteria { font-size: 12px; color: var(--muted); }

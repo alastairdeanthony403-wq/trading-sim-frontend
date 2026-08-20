@@ -26,6 +26,7 @@ import {
   getProgress,
   getCareer,
   getEngagementSummary,
+  getMilestones,
   updateEngagementProfile,
   getTools,
   getMissions,
@@ -44,7 +45,8 @@ import {
   getLeagueLeaderboard,
 } from "./api";
 import { getUserId, getDisplayName, setDisplayName } from "./user";
-import { GoalCard, NextUp, SessionSummary, XpToast, useReducedMotion } from "./engagement";
+import { GoalCard, MilestoneGallery, NextUp, SessionSummary, XpToast,
+         useReducedMotion } from "./engagement";
 import { LESSONS } from "./lessons";
 import { CHECKS } from "./checks";
 
@@ -268,6 +270,7 @@ export default function App() {
   const [llmCoach, setLlmCoach] = useState(null);   // { loading, text }
   const [career, setCareer] = useState(null);
   const [engagement, setEngagement] = useState(null);   // goal / next-up / consistency
+  const [milestones, setMilestones] = useState(null);
   const [goalSaving, setGoalSaving] = useState(false);
   const [xpAward, setXpAward] = useState(null);         // drives the confirmation beat
   const reducedMotion = useReducedMotion(engagement?.profile?.reduced_motion_override);
@@ -378,6 +381,11 @@ export default function App() {
     } catch { /* leave the previous goal in place */ }
     setGoalSaving(false);
   };
+
+  const openMilestones = useCallback(async () => {
+    setScreen("milestones");
+    try { setMilestones(await getMilestones(getUserId())); } catch { setMilestones(null); }
+  }, []);
 
   const openCareer = useCallback(async () => {
     try { setCareer(await getCareer(getUserId())); } catch { /* keep last known */ }
@@ -1486,6 +1494,24 @@ export default function App() {
     );
   }
 
+  if (screen === "milestones") {
+    return (
+      <div className="app">
+        <header className="header">
+          <div className="logo">TAPE//RUN</div>
+          <button className="link-btn" onClick={openCareer}>← Career</button>
+        </header>
+        <main className="howto">
+          <div className="section-title">Milestones</div>
+          <div className="mono muted" style={{ margin: "4px 0 18px" }}>
+            Every milestone shows exactly what unlocks it — nothing here is hidden or random
+          </div>
+          <MilestoneGallery data={milestones} />
+        </main>
+      </div>
+    );
+  }
+
   if (screen === "career" && career) {
     const fmtReq = (r) => {
       const cur = typeof r.current === "number" && r.current < 1 && r.key.startsWith("pct")
@@ -1533,6 +1559,14 @@ export default function App() {
             <button className="career-action" onClick={openProgress}>
               <span className="ca-name">Your progress</span>
               <span className="ca-desc">Lessons done, scores and history</span>
+            </button>
+            <button className="career-action" onClick={openMilestones}>
+              <span className="ca-name">Milestones</span>
+              <span className="ca-desc">
+                {milestones
+                  ? `${milestones.unlocked_count} of ${milestones.total_count} unlocked`
+                  : "Every marker, and exactly what unlocks it"}
+              </span>
             </button>
             <button
               className={`career-action${modeLocked("paper") ? " locked" : ""}`}

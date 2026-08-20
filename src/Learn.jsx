@@ -10,7 +10,7 @@ import { Gloss } from "./glossary";
 // Step types that are graded (counted toward a perfect lesson).
 const GRADABLE = new Set(["question", "build_candle", "mark_chart", "compare"]);
 import { loadXp, migrateLegacyXp, EMPTY_XP } from "./xp";
-import { XpToast, useReducedMotion } from "./engagement";
+import { MilestoneUnlocks, XpToast, useReducedMotion } from "./engagement";
 
 const UNIT_ICONS = { 1: "⚙", 2: "📊", 3: "🧭", 4: "🛡", 5: "🧠", 6: "💰" };
 
@@ -103,6 +103,7 @@ export default function Learn({ progressData, onExit, onProgressUpdate,
       xp: res.xp_awarded || 0,
       leveledUp: next.career_level > before,
       levelName: next.career_level_name,
+      milestones: res.feedback?.milestones_unlocked || [],
     };
   };
 
@@ -343,6 +344,7 @@ function LessonPlayer({ lesson, onBank, onComplete, onQuit }) {
             {correctCount} / {totalGradable} correct{summary.perfect ? " — flawless run, bonus earned." : "."}
           </p>
           <div className="xp-award">+{summary.xp} XP</div>
+          <MilestoneUnlocks items={summary.milestones} />
           {summary.leveledUp && (
             <div className="levelup-banner">⬆ CAREER LEVEL UP — you are now <strong>{summary.levelName}</strong></div>
           )}
@@ -562,6 +564,7 @@ function KnowledgeCheck({ check, checkId, onBank, onComplete, onQuit, onScenario
             </div>
           )}
           {passed && awarded && <div className="xp-award">+{awarded.xp} XP</div>}
+          {passed && <MilestoneUnlocks items={awarded?.milestones} />}
           {passed && awarded?.leveledUp && (
             <div className="levelup-banner">⬆ CAREER LEVEL UP — you are now <strong>{awarded.levelName}</strong></div>
           )}

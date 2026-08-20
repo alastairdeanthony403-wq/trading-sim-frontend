@@ -182,6 +182,8 @@ export function SessionSummary({ engagement, onDone, onAnother, onReview }) {
         </div>
       )}
 
+      <MilestoneUnlocks items={feedback?.milestones_unlocked} />
+
       {feedback?.goal_progress && (
         <div className="summary-goal">
           {feedback.goal_progress.met
@@ -195,6 +197,95 @@ export function SessionSummary({ engagement, onDone, onAnother, onReview }) {
         {onReview && <button className="menu-btn" onClick={onReview}>Review session</button>}
         {onAnother && <button className="link-btn" onClick={onAnother}>Run another scenario</button>}
       </div>
+    </div>
+  );
+}
+
+
+/* ── milestones ────────────────────────────────────────────────────────────
+   The gallery states every milestone's real criteria, locked or not. There are
+   deliberately no "???" cards, no teasers and no mystery unlocks — a learner
+   can always read exactly what a milestone asks for and how far in they are.
+   Progress is shown for every entry because every criterion is a bounded,
+   reachable count or percentage.                                            */
+
+const CATEGORY_ORDER = ["discipline", "craft", "learning", "consistency"];
+const CATEGORY_LABELS = {
+  discipline: "Discipline",
+  craft: "Craft",
+  learning: "Learning",
+  consistency: "Consistency",
+};
+
+const fmtMetric = (value, isPercent) => {
+  if (value == null) return "0";
+  if (isPercent) return `${Math.round(value * 100)}%`;
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+};
+
+export function MilestoneCard({ item }) {
+  const pct = item.target > 0
+    ? Math.min(((item.current || 0) / item.target) * 100, 100) : 0;
+  return (
+    <div className={`milestone-card${item.unlocked ? " unlocked" : ""}`}>
+      <div className="milestone-head">
+        <span className="milestone-name">{item.name}</span>
+        {item.unlocked && <span className="milestone-tick">✓</span>}
+      </div>
+      <div className="milestone-desc">{item.description}</div>
+      <div className="milestone-criteria">{item.criteria}</div>
+      {!item.unlocked && (
+        <>
+          <div className="milestone-bar">
+            <div className="milestone-fill" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="milestone-progress">
+            {fmtMetric(item.current, item.is_percent)} of{" "}
+            {fmtMetric(item.target, item.is_percent)} · {item.metric_label}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function MilestoneGallery({ data }) {
+  if (!data) return <div className="muted">Loading milestones…</div>;
+  const cats = CATEGORY_ORDER.filter((c) => (data.categories?.[c] || []).length);
+  return (
+    <div className="milestone-gallery">
+      <div className="milestone-count">
+        {data.unlocked_count} of {data.total_count} unlocked
+      </div>
+      {cats.map((cat) => (
+        <div key={cat} className="milestone-group">
+          <div className="section-label">{CATEGORY_LABELS[cat] || cat}</div>
+          <div className="milestone-grid">
+            {data.categories[cat].map((m) => (
+              <MilestoneCard key={m.code} item={m} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Unlocks earned by the action just completed. Rarer than XP, so it gets more
+ *  than a toast — but it still never blocks, and it never nags. */
+export function MilestoneUnlocks({ items }) {
+  if (!items || !items.length) return null;
+  return (
+    <div className="milestone-unlocks">
+      <div className="section-label">
+        {items.length === 1 ? "Milestone unlocked" : `${items.length} milestones unlocked`}
+      </div>
+      {items.map((m) => (
+        <div key={m.code} className="milestone-unlock-row">
+          <span className="milestone-unlock-name">{m.name}</span>
+          <span className="milestone-unlock-criteria">{m.criteria}</span>
+        </div>
+      ))}
     </div>
   );
 }

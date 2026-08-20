@@ -289,3 +289,47 @@ export function MilestoneUnlocks({ items }) {
     </div>
   );
 }
+
+
+/* ── consistency ───────────────────────────────────────────────────────────
+   The streak, rendered the way Phase 4 defines it: weekly, display-only, and
+   never phrased around what a miss would cost. Everything here states what HAS
+   happened — there is no countdown, no days-remaining and no "don't lose it".
+   Rest days are reported AFTER they were spent, as a fact, not dangled
+   beforehand as something to protect.                                       */
+
+export function StreakCard({ streak }) {
+  if (!streak) return null;
+  const {
+    current_count: count, best_count: best, label, best_label,
+    active_days_this_period: active, target_days: target, period_met: met,
+    freezes_available: rest, freezes_used: used = [],
+  } = streak;
+
+  const pct = target > 0 ? Math.min((active / target) * 100, 100) : 0;
+  const lastRest = used.length ? used[used.length - 1] : null;
+
+  return (
+    <div className="streak-card">
+      <div className="goal-head">
+        <div className="section-label">Consistency</div>
+        {best > 0 && <div className="streak-best">best {best}</div>}
+      </div>
+
+      <div className="streak-count">{count}</div>
+      <div className="streak-label">{label}</div>
+
+      <div className="goal-bar" style={{ marginTop: 14 }}>
+        <div className={`goal-fill${met ? " met" : ""}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="streak-progress">{active} of {target} active days this week</div>
+
+      {best_label && <div className="streak-best-line">{best_label}</div>}
+
+      <div className="streak-rest">
+        {rest} rest day{rest === 1 ? "" : "s"} in hand
+        {lastRest ? ` · one covered ${lastRest.period}` : ""}
+      </div>
+    </div>
+  );
+}

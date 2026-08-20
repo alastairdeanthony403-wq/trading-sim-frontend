@@ -45,7 +45,7 @@ import {
   getLeagueLeaderboard,
 } from "./api";
 import { getUserId, getDisplayName, setDisplayName } from "./user";
-import { GoalCard, MilestoneGallery, NextUp, SessionSummary, XpToast,
+import { GoalCard, MilestoneGallery, NextUp, SessionSummary, StreakCard, XpToast,
          useReducedMotion } from "./engagement";
 import { LESSONS } from "./lessons";
 import { CHECKS } from "./checks";
@@ -261,7 +261,7 @@ export default function App() {
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [toolLevel, setToolLevel] = useState(1);
   const [missions, setMissions] = useState([]);
-  const [daily, setDaily] = useState(null);          // { mission, date, streak }
+  const [daily, setDaily] = useState(null);          // { mission, date }
   const [activeMission, setActiveMission] = useState(null);
   const [activeIsDaily, setActiveIsDaily] = useState(false);
   const [missionStatus, setMissionStatus] = useState(null);  // live { results, passed }
@@ -1537,6 +1537,7 @@ export default function App() {
             <div className="loop-surfaces" style={{ display: "grid", gap: 12, marginBottom: 20 }}>
               <GoalCard profile={engagement.profile} goal={engagement.goal}
                         onChange={changeGoal} saving={goalSaving} />
+              <StreakCard streak={engagement.streak} />
               <NextUp next={engagement.next_goal}
                       itemTitle={itemTitle}
                       onGo={(n) => (n.action === "learn" ? openLearn() : setScreen("select"))} />
@@ -1827,7 +1828,7 @@ export default function App() {
           {daily && daily.mission && (
             <div className="daily-card">
               <div className="daily-tag">
-                DAILY CHALLENGE · {daily.date} · streak {daily.streak} 🔥
+                DAILY CHALLENGE · {daily.date}
               </div>
               <h3 style={{ margin: "6px 0" }}>{daily.mission.title}</h3>
               <p className="muted">{daily.mission.brief}</p>
